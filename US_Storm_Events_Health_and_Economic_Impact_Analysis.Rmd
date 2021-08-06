@@ -1,0 +1,91 @@
+---
+title: 'U.S. Storm Events: Health and Economic Impact Analysis'
+author: "Mark Nemeth"
+date: "8/6/2021"
+output: html_document
+---
+
+## Synopsis
+
+Storms and other severe weather events can cause both public health and economic problems for communities and municipalities. Many severe events can result in fatalities, injuries, and property damage, and preventing such outcomes to the extent possible is a key concern.
+
+This analysis will address that concern by identifying which types of storm events    
+
+* are most harmful with respect to population health, and  
+* have the greatest economic consequences.  
+
+The data supporting this effort is drawn from the U.S. National Oceanic and Atmospheric Administration's (NOAA) [Storm Database][1]<sup>1</sup>, a repository that tracks the characteristics of major storms and weather events in the United States, such as when and where they occur, and estimates of any fatalities, injuries, and property damage.
+
+<h5 style="background-color:rgb(255, 99, 71);">TODO: Add in some overview of the findings below....</h5>  
+
+## Data Processing
+
+From the **2007** version of the [Storm Database][1], we were able to obtain the needed information, such as the storm [event types][2]<sup>2</sup> and event dates, casualty counts (fatalies and injuries), estimates for property damage and crop damage, and the locations of these events with geographic specificity at the county-level (although, the analysis here will focus merely at the national level).  
+
+### Reading in the Storm Database file
+
+```{r library_calls}
+library(readr)
+library(dplyr)
+library(ggplot2)
+```
+```{r reading_in_storm_file}
+
+#Class version = 2012 version of database (NOAA receives data from local offices within 60-90 days after local offices record events.)
+fileUrl<-"https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2"
+download.file(fileUrl,destfile="./data/repdata_stormdata.csv.bz2",method="curl")
+
+
+#initial inspection of file
+chkFile<-read_csv("./data/repdata_stormdata.csv", n_max=1000)
+str(chkFile)
+
+```
+
+Here we see that a number of the columns will not be needed.  We will pull in only the needed columns.  
+
+```{r reading_in_analysis_form_of_db}
+
+#(Note: This initial examination let's us know that the column names for the file are unproblematic for the remainder of our work.)
+
+analysisDF<-read_csv("./data/repdata_stormdata.csv")
+analysisDF<-analysisDF %>% 
+        
+        select(
+           BGN_DATE,
+           TIME_ZONE,
+           COUNTY,
+           COUNTYNAME,
+           STATE,
+           EVTYPE,
+           END_DATE,
+           MAG,
+           FATALITIES,
+           INJURIES,
+           PROPDMG,
+           PROPDMGEXP,
+           CROPDMG,
+           CROPDMGEXP) %>% mutate(begin_dt=as.date(BGN_DATE))
+
+
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+---  
+**Footnotes**  
+  
+1. The version of the database used in this analysis is from early 2012. Data reported to NOAA within 60-90 days after local offices compile data.  This version has last reporting event date of 11/30/2011. 
+2. The Storm Database' Storm Data Preparation document, which contains not only a glossary of terms and database values, but also reports on outstanding storms of the month (OSM) and tornado and severe thunderstorm confirmation reports.
+
+
+[1]: https://www.ncdc.noaa.gov/stormevents/ftp.jsp "Storm Database"
+[2]: https://www.nws.noaa.gov/directives/sym/pd01016005curr.pdf "event types"
