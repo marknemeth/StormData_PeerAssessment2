@@ -181,16 +181,18 @@ pre code {
 <li>have the greatest economic consequences.</li>
 </ul>
 <p>The data supporting this effort is drawn from the U.S. National Oceanic and Atmospheric Administration’s (NOAA) <a href="https://www.ncdc.noaa.gov/stormevents/ftp.jsp" title="Storm Database">Storm Database</a><sup>1</sup>, a repository that tracks the characteristics of major storms and weather events in the United States, such as when and where they occur, and estimates of any fatalities, injuries, and property damage.</p>
-<h5 style="background-color:rgb(255, 99, 71);">
-TODO: Add in some overview of the findings below….
-</h5>
+<p>This analysis reveals that for human cost, the most significant weather events are torandoes (1), thunderstorm winds (2), and flash floods (3). Torandoes caused the most fatalities and injuries, outnumbering any other weather event by at least 3.5 times in either category. Thunderstorm winds caused the second highest number of injuries across the U.S., while flash floods killed the second highest number of people for the period over which the analysis was conducted.</p>
+<p>With regard to economic impact, tornades are again highly ranked, second, but floods caused the most damage for the U.S. over the period studied. Floods caused $39.6 MM in damage on average per year, while tornnadoes came in a close second at $33.3 MM. These were found to be the most damaging weather events, economically, beating out the nearest other severe weather event, hail, by nearly twice its effect ($161.0 MM).</p>
 </div>
 <div id="data-processing" class="section level2">
 <h2>Data Processing</h2>
-<p>From the <strong>2007</strong> version of the <a href="https://www.ncdc.noaa.gov/stormevents/ftp.jsp" title="Storm Database">Storm Database</a>, we were able to obtain the needed information, such as the storm <a href="https://www.nws.noaa.gov/directives/sym/pd01016005curr.pdf" title="event types">event types</a><sup>2</sup> and event dates, casualty counts (fatalies and injuries), estimates for property damage and crop damage, and the locations of these events with geographic specificity at the county-level (although, the analysis here will focus merely at the national level).</p>
-<div id="reading-in-the-storm-database-file" class="section level3">
-<h3>Reading in the Storm Database file</h3>
+<p>From the 2012 version of the <a href="https://www.ncdc.noaa.gov/stormevents/ftp.jsp" title="Storm Database">Storm Database</a> (last reporting month being November 2011), we were able to obtain the needed information, such as the storm <a href="https://www.nws.noaa.gov/directives/sym/pd01016005curr.pdf" title="event types">event types</a><sup>2</sup> and event dates, casualty counts (fatalities and injuries), estimates for property damage and crop damage, and the locations of these events with geographic specificity at the county-level (although, the analysis here will focus merely at the national level).</p>
+<div id="reading-in-the-storm-database-file-for-initial-checking" class="section level3">
+<h3>Reading in the Storm Database file for initial checking</h3>
 <pre class="r"><code>library(readr)
+library(ggplot2)
+library(stringr)
+library(xtable)
 library(dplyr)</code></pre>
 <pre><code>## 
 ## Attaching package: &#39;dplyr&#39;</code></pre>
@@ -200,14 +202,13 @@ library(dplyr)</code></pre>
 <pre><code>## The following objects are masked from &#39;package:base&#39;:
 ## 
 ##     intersect, setdiff, setequal, union</code></pre>
-<pre class="r"><code>library(ggplot2)</code></pre>
-<pre class="r"><code>#Class version = 2007 version of database
+<pre class="r"><code>#Class version = 2012 version of database (NCDC receives data from NWS between 60 and 90 days after the end of the data month.)
 fileUrl&lt;-&quot;https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2&quot;
 download.file(fileUrl,destfile=&quot;./data/repdata_stormdata.csv.bz2&quot;,method=&quot;curl&quot;)
 
 
 #initial inspection of file
-chkFile&lt;-read_csv(&quot;./data/repdata_stormdata.csv&quot;, n_max=1000)</code></pre>
+chkFile&lt;-read_csv(&quot;./data/repdata_stormdata.csv.bz2&quot;, n_max=1000)</code></pre>
 <pre><code>## 
 ## -- Column specification --------------------------------------------------------
 ## cols(
@@ -312,36 +313,9203 @@ chkFile&lt;-read_csv(&quot;./data/repdata_stormdata.csv&quot;, n_max=1000)</code
 ##   ..   REMARKS = col_logical(),
 ##   ..   REFNUM = col_double()
 ##   .. )</code></pre>
-<pre class="r"><code>head(chkFile)</code></pre>
-<pre><code>## # A tibble: 6 x 37
-##   STATE__ BGN_DATE   BGN_TIME TIME_ZONE COUNTY COUNTYNAME STATE EVTYPE BGN_RANGE
-##     &lt;dbl&gt; &lt;chr&gt;      &lt;chr&gt;    &lt;chr&gt;      &lt;dbl&gt; &lt;chr&gt;      &lt;chr&gt; &lt;chr&gt;      &lt;dbl&gt;
-## 1       1 4/18/1950~ 0130     CST           97 MOBILE     AL    TORNA~         0
-## 2       1 4/18/1950~ 0145     CST            3 BALDWIN    AL    TORNA~         0
-## 3       1 2/20/1951~ 1600     CST           57 FAYETTE    AL    TORNA~         0
-## 4       1 6/8/1951 ~ 0900     CST           89 MADISON    AL    TORNA~         0
-## 5       1 11/15/195~ 1500     CST           43 CULLMAN    AL    TORNA~         0
-## 6       1 11/15/195~ 2000     CST           77 LAUDERDALE AL    TORNA~         0
-## # ... with 28 more variables: BGN_AZI &lt;lgl&gt;, BGN_LOCATI &lt;lgl&gt;, END_DATE &lt;lgl&gt;,
-## #   END_TIME &lt;lgl&gt;, COUNTY_END &lt;dbl&gt;, COUNTYENDN &lt;lgl&gt;, END_RANGE &lt;dbl&gt;,
-## #   END_AZI &lt;lgl&gt;, END_LOCATI &lt;lgl&gt;, LENGTH &lt;dbl&gt;, WIDTH &lt;dbl&gt;, F &lt;dbl&gt;,
-## #   MAG &lt;dbl&gt;, FATALITIES &lt;dbl&gt;, INJURIES &lt;dbl&gt;, PROPDMG &lt;dbl&gt;,
-## #   PROPDMGEXP &lt;chr&gt;, CROPDMG &lt;dbl&gt;, CROPDMGEXP &lt;lgl&gt;, WFO &lt;lgl&gt;,
-## #   STATEOFFIC &lt;lgl&gt;, ZONENAMES &lt;lgl&gt;, LATITUDE &lt;dbl&gt;, LONGITUDE &lt;dbl&gt;,
-## #   LATITUDE_E &lt;dbl&gt;, LONGITUDE_ &lt;dbl&gt;, REMARKS &lt;lgl&gt;, REFNUM &lt;dbl&gt;</code></pre>
-<p>Here we see that a number of the columns will not be needed.</p>
+<p>Here we see that a number of the columns will not be needed. We will pull in only the needed columns.</p>
+<p><strong>Columns of Interest</strong></p>
+<ul>
+<li><p>BGN_DATE = Begin date is datetime character format and will need to be transformed to date mm/dd/yyyy. Event start date.<br />
+</p></li>
+<li><p>TIME_ZONE = Could be helpful if times or days are part of analysis, but we will not be working so granularly. (actually omitted in analysis)<br />
+</p></li>
+<li><p>COUNTY = This is the standard FIPS CODE, which is a character 4-digit code. We transform this as such.<br />
+</p></li>
+<li><p>COUNTYNAME = The full name of the county.<br />
+</p></li>
+<li><p>STATE = 2-letter state abbreviation.<br />
+</p></li>
+<li><p>EVTYPE = Values are Hail, Thunderstorm, etc. - spelled out; Standardized in August 2007. We note “?” is in the field to be corrected later.<br />
+</p></li>
+<li><p>END_DATE = End date is datetime character format and will need to be transformed to date mm/dd/yyyy. Event end date; not crucial to this study.<br />
+</p></li>
+<li><p>MAG = Wind speed (knots) or hail size in inches (to hundredths), depending on event.<br />
+</p></li>
+<li><p>FATALITIES = Count of fatalities directly ascribed to the event.<br />
+</p></li>
+<li><p>INJURIES = Count of injuries directly ascribed to the event.<br />
+</p></li>
+<li><p>PROPDMG = Numeric value (dd.dd) which represents the thousands, millions, etc. in property damage amounts. Used in conjunction with the PROPDMGEXP value.</p></li>
+<li><p>PROPDMGEXP = Indicates if PROPDMG is K(1000’s), M(1,000,000s), or B (Billions). Standardized along with event types in August 2007.<br />
+</p></li>
+<li><p>CROPDMG = Numeric value (dd.dd) which represents the thousands, millions, etc. in crop damage amounts. Used in conjunction with the CROPDMGEXP value.</p></li>
+<li><p>CROPDMGEXP = Indicates if CROPDMG is K(1000’s), M(1,000,000s), or B (Billions). Standardized along with event types in August 2007.</p></li>
+</ul>
+</div>
+<div id="reading-in-the-storm-database-file" class="section level3">
+<h3>Reading in the Storm Database file</h3>
+<ul>
+<li>Reading in<br />
+</li>
+<li>Filtering on columns of interest<br />
+</li>
+<li>Performing noted transformations<br />
+</li>
+<li>Adding aggregation variable begin_year for annualized views of results</li>
+</ul>
+<pre class="r"><code>analysisDF&lt;-read_csv(&quot;./data/repdata_stormdata.csv.bz2&quot;, col_types=&quot;ncccncccnccccncnccnnnnnnncnccccnnnncn&quot;)
+analysisDF&lt;-analysisDF %&gt;% 
+        
+        select(
+                BGN_DATE,
+                COUNTY,          #FIPS CODE
+                COUNTYNAME,
+                STATE,           #2-letter abbrev.
+                EVTYPE,          #Hail, Thunderstorm, etc. - spelled out
+                END_DATE,
+                MAG,             #Wind speed (knots) or hail size in inches (to hundredths), depending on event
+                FATALITIES,      #Count
+                INJURIES,        #Count
+                PROPDMG,         #Numeric value
+                PROPDMGEXP,      #Indicates if numeric is K(1000&#39;s), M(1,000,000s), B
+                CROPDMG,         #Numeric and *EXP same use as for PROPDMG
+                CROPDMGEXP) %&gt;% 
+        
+        mutate(
+                begin_dt=as.Date(BGN_DATE, format =  &quot;%m/%d/%Y %H:%M:%S&quot;),
+                county_fips=as.character(str_pad(COUNTY, width=4, side=&quot;left&quot;, pad=&quot;0&quot;)), #FIPS are 4 character numeric codes
+                countyname=COUNTYNAME,
+                state=STATE,
+                event_type=str_to_title(EVTYPE),   #Many different cases used for same event type - so, make uniform
+                end_date=as.Date(END_DATE, format =  &quot;%m/%d/%Y %H:%M:%S&quot;),
+                magnitude=MAG,
+                fatalities=FATALITIES,
+                injuries=INJURIES,
+                property_damage=PROPDMG,
+                property_damage_scale=PROPDMGEXP,
+                crop_damage=CROPDMG,
+                crop_damage_scale=CROPDMGEXP) %&gt;%
+        
+        select(
+                begin_dt,
+                county_fips,
+                countyname,
+                state,
+                event_type,
+                end_date,
+                magnitude,
+                fatalities,
+                injuries,
+                property_damage,
+                property_damage_scale,
+                crop_damage,
+                crop_damage_scale)
+               
+analysisDF$begin_year&lt;-as.integer(format(analysisDF$begin_dt, format=&quot;%Y&quot;))
+
+#analysisDF$event_type[analysisDF$event_type==&quot;?&quot;] &lt;- &quot;Unidentifed Type&quot;   #To eliminate the single &quot;?&quot; entry</code></pre>
+<p>Now, we recognize from the <em>NWS Instruction 10-1605</em> (linked above), that standardization of event type names was instituted in August of 2007. Also, this is when the monetary estimate tables were formalized, as shown in this Storm Data Preparation instruction. So, we will investigate the entries for these fields ahead of any analysis.</p>
+<pre class="r"><code>evt_table_ante&lt;-xtable(table(sort(analysisDF$event_type[analysisDF$begin_year&lt;2007])),caption=&quot;Before August 2007 Instruction&quot;, align=&quot;lr&quot;) #working on annual est.s later
+names(evt_table_ante)&lt;-c(&quot;Event Count&quot;)
+evt_table_post&lt;-xtable(table(sort(analysisDF$event_type[analysisDF$begin_year&gt;2007])), caption=&quot;After August 2007 Instruction&quot;, align=&quot;lr&quot;) #working on annual est.s later
+names(evt_table_post)&lt;-c(&quot;Event Count&quot;)
+
+#dmg_table&lt;-xtable(table(analysisDF$property_damage_scale[analysisDF$begin_year&gt;2007]))
+
+print(evt_table_ante, include.colnames=TRUE, type=&quot;html&quot;)</code></pre>
+<!-- html table generated in R 4.0.5 by xtable 1.8-4 package -->
+<!-- Sat Aug 07 22:19:26 2021 -->
+<table border="1">
+<caption align="bottom">
+Before August 2007 Instruction
+</caption>
+<tr>
+<th>
+</th>
+<th>
+Event Count
+</th>
+</tr>
+<tr>
+<td>
+?
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Abnormal Warmth
+</td>
+<td align="right">
+4
+</td>
+</tr>
+<tr>
+<td>
+Abnormally Dry
+</td>
+<td align="right">
+2
+</td>
+</tr>
+<tr>
+<td>
+Abnormally Wet
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Accumulated Snowfall
+</td>
+<td align="right">
+4
+</td>
+</tr>
+<tr>
+<td>
+Agricultural Freeze
+</td>
+<td align="right">
+6
+</td>
+</tr>
+<tr>
+<td>
+Apache County
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Astronomical High Tide
+</td>
+<td align="right">
+103
+</td>
+</tr>
+<tr>
+<td>
+Avalance
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Avalanche
+</td>
+<td align="right">
+237
+</td>
+</tr>
+<tr>
+<td>
+Beach Erosin
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Beach Erosion
+</td>
+<td align="right">
+4
+</td>
+</tr>
+<tr>
+<td>
+Beach Erosion/Coastal Flood
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Beach Flood
+</td>
+<td align="right">
+2
+</td>
+</tr>
+<tr>
+<td>
+Below Normal Precipitation
+</td>
+<td align="right">
+2
+</td>
+</tr>
+<tr>
+<td>
+Bitter Wind Chill
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Bitter Wind Chill Temperatures
+</td>
+<td align="right">
+3
+</td>
+</tr>
+<tr>
+<td>
+Black Ice
+</td>
+<td align="right">
+17
+</td>
+</tr>
+<tr>
+<td>
+Blizzard
+</td>
+<td align="right">
+1036
+</td>
+</tr>
+<tr>
+<td>
+Blizzard And Extreme Wind Chil
+</td>
+<td align="right">
+2
+</td>
+</tr>
+<tr>
+<td>
+Blizzard And Heavy Snow
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Blizzard Summary
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Blizzard Weather
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Blizzard/Freezing Rain
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Blizzard/Heavy Snow
+</td>
+<td align="right">
+2
+</td>
+</tr>
+<tr>
+<td>
+Blizzard/High Wind
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Blizzard/Winter Storm
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Blow-Out Tide
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Blow-Out Tides
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Blowing Dust
+</td>
+<td align="right">
+4
+</td>
+</tr>
+<tr>
+<td>
+Blowing Snow
+</td>
+<td align="right">
+17
+</td>
+</tr>
+<tr>
+<td>
+Blowing Snow- Extreme Wind Chi
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Blowing Snow &amp; Extreme Wind Ch
+</td>
+<td align="right">
+2
+</td>
+</tr>
+<tr>
+<td>
+Blowing Snow/Extreme Wind Chil
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Breakup Flooding
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Brush Fire
+</td>
+<td align="right">
+3
+</td>
+</tr>
+<tr>
+<td>
+Brush Fires
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Coastal Flooding/Erosion
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Coastal Erosion
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Coastal Flood
+</td>
+<td align="right">
+190
+</td>
+</tr>
+<tr>
+<td>
+Coastal Flooding
+</td>
+<td align="right">
+183
+</td>
+</tr>
+<tr>
+<td>
+Coastal Flooding/Erosion
+</td>
+<td align="right">
+5
+</td>
+</tr>
+<tr>
+<td>
+Coastal Storm
+</td>
+<td align="right">
+10
+</td>
+</tr>
+<tr>
+<td>
+Coastal Surge
+</td>
+<td align="right">
+2
+</td>
+</tr>
+<tr>
+<td>
+Coastal/Tidal Flood
+</td>
+<td align="right">
+2
+</td>
+</tr>
+<tr>
+<td>
+Coastalflood
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Coastalstorm
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Cold
+</td>
+<td align="right">
+82
+</td>
+</tr>
+<tr>
+<td>
+Cold Air Funnel
+</td>
+<td align="right">
+4
+</td>
+</tr>
+<tr>
+<td>
+Cold Air Funnels
+</td>
+<td align="right">
+2
+</td>
+</tr>
+<tr>
+<td>
+Cold Air Tornado
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Cold And Frost
+</td>
+<td align="right">
+7
+</td>
+</tr>
+<tr>
+<td>
+Cold And Snow
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Cold And Wet Conditions
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Cold Temperature
+</td>
+<td align="right">
+2
+</td>
+</tr>
+<tr>
+<td>
+Cold Temperatures
+</td>
+<td align="right">
+4
+</td>
+</tr>
+<tr>
+<td>
+Cold Wave
+</td>
+<td align="right">
+3
+</td>
+</tr>
+<tr>
+<td>
+Cold Weather
+</td>
+<td align="right">
+4
+</td>
+</tr>
+<tr>
+<td>
+Cold Wind Chill Temperatures
+</td>
+<td align="right">
+6
+</td>
+</tr>
+<tr>
+<td>
+Cold/Wind Chill
+</td>
+<td align="right">
+21
+</td>
+</tr>
+<tr>
+<td>
+Cold/Winds
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Cool And Wet
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Cool Spell
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Cstl Flooding/Erosion
+</td>
+<td align="right">
+2
+</td>
+</tr>
+<tr>
+<td>
+Dam Break
+</td>
+<td align="right">
+4
+</td>
+</tr>
+<tr>
+<td>
+Dam Failure
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Damaging Freeze
+</td>
+<td align="right">
+8
+</td>
+</tr>
+<tr>
+<td>
+Deep Hail
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Dense Fog
+</td>
+<td align="right">
+442
+</td>
+</tr>
+<tr>
+<td>
+Dense Smoke
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Downburst
+</td>
+<td align="right">
+2
+</td>
+</tr>
+<tr>
+<td>
+Downburst Winds
+</td>
+<td align="right">
+2
+</td>
+</tr>
+<tr>
+<td>
+Driest Month
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Drifting Snow
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Drought
+</td>
+<td align="right">
+1173
+</td>
+</tr>
+<tr>
+<td>
+Drought/Excessive Heat
+</td>
+<td align="right">
+13
+</td>
+</tr>
+<tr>
+<td>
+Drowning
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Dry
+</td>
+<td align="right">
+9
+</td>
+</tr>
+<tr>
+<td>
+Dry Conditions
+</td>
+<td align="right">
+6
+</td>
+</tr>
+<tr>
+<td>
+Dry Hot Weather
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Dry Microburst
+</td>
+<td align="right">
+186
+</td>
+</tr>
+<tr>
+<td>
+Dry Microburst 50
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Dry Microburst 53
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Dry Microburst 58
+</td>
+<td align="right">
+2
+</td>
+</tr>
+<tr>
+<td>
+Dry Microburst 61
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Dry Microburst 84
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Dry Microburst Winds
+</td>
+<td align="right">
+5
+</td>
+</tr>
+<tr>
+<td>
+Dry Mircoburst Winds
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Dry Pattern
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Dry Spell
+</td>
+<td align="right">
+4
+</td>
+</tr>
+<tr>
+<td>
+Dry Weather
+</td>
+<td align="right">
+4
+</td>
+</tr>
+<tr>
+<td>
+Dryness
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Dust Devel
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Dust Devil
+</td>
+<td align="right">
+97
+</td>
+</tr>
+<tr>
+<td>
+Dust Devil Waterspout
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Dust Storm
+</td>
+<td align="right">
+245
+</td>
+</tr>
+<tr>
+<td>
+Dust Storm/High Winds
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Duststorm
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Early Freeze
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Early Frost
+</td>
+<td align="right">
+2
+</td>
+</tr>
+<tr>
+<td>
+Early Rain
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Early Snow
+</td>
+<td align="right">
+3
+</td>
+</tr>
+<tr>
+<td>
+Early Snowfall
+</td>
+<td align="right">
+7
+</td>
+</tr>
+<tr>
+<td>
+Erosion/Cstl Flood
+</td>
+<td align="right">
+2
+</td>
+</tr>
+<tr>
+<td>
+Excessive
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Excessive Cold
+</td>
+<td align="right">
+2
+</td>
+</tr>
+<tr>
+<td>
+Excessive Heat
+</td>
+<td align="right">
+1153
+</td>
+</tr>
+<tr>
+<td>
+Excessive Heat/Drought
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Excessive Precipitation
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Excessive Rain
+</td>
+<td align="right">
+5
+</td>
+</tr>
+<tr>
+<td>
+Excessive Rainfall
+</td>
+<td align="right">
+4
+</td>
+</tr>
+<tr>
+<td>
+Excessive Snow
+</td>
+<td align="right">
+25
+</td>
+</tr>
+<tr>
+<td>
+Excessive Wetness
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Excessively Dry
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Extended Cold
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Extreme Cold
+</td>
+<td align="right">
+657
+</td>
+</tr>
+<tr>
+<td>
+Extreme Cold/Wind Chill
+</td>
+<td align="right">
+294
+</td>
+</tr>
+<tr>
+<td>
+Extreme Heat
+</td>
+<td align="right">
+22
+</td>
+</tr>
+<tr>
+<td>
+Extreme Wind Chill
+</td>
+<td align="right">
+6
+</td>
+</tr>
+<tr>
+<td>
+Extreme Wind Chill/Blowing Sno
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Extreme Wind Chills
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Extreme Windchill
+</td>
+<td align="right">
+204
+</td>
+</tr>
+<tr>
+<td>
+Extreme Windchill Temperatures
+</td>
+<td align="right">
+19
+</td>
+</tr>
+<tr>
+<td>
+Extreme/Record Cold
+</td>
+<td align="right">
+4
+</td>
+</tr>
+<tr>
+<td>
+Extremely Wet
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Falling Snow/Ice
+</td>
+<td align="right">
+2
+</td>
+</tr>
+<tr>
+<td>
+First Frost
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+First Snow
+</td>
+<td align="right">
+9
+</td>
+</tr>
+<tr>
+<td>
+Flash Flood
+</td>
+<td align="right">
+35182
+</td>
+</tr>
+<tr>
+<td>
+Flash Flood - Heavy Rain
+</td>
+<td align="right">
+2
+</td>
+</tr>
+<tr>
+<td>
+Flash Flood From Ice Jams
+</td>
+<td align="right">
+5
+</td>
+</tr>
+<tr>
+<td>
+Flash Flood Landslides
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Flash Flood Winds
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Flash Flood/
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Flash Flood/ Flood
+</td>
+<td align="right">
+2
+</td>
+</tr>
+<tr>
+<td>
+Flash Flood/ Street
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Flash Flood/Flood
+</td>
+<td align="right">
+22
+</td>
+</tr>
+<tr>
+<td>
+Flash Flood/Heavy Rain
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Flash Flood/Landslide
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Flash Flooding
+</td>
+<td align="right">
+682
+</td>
+</tr>
+<tr>
+<td>
+Flash Flooding/Flood
+</td>
+<td align="right">
+8
+</td>
+</tr>
+<tr>
+<td>
+Flash Flooding/Thunderstorm Wi
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Flash Floods
+</td>
+<td align="right">
+32
+</td>
+</tr>
+<tr>
+<td>
+Flash Floooding
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Flood
+</td>
+<td align="right">
+12877
+</td>
+</tr>
+<tr>
+<td>
+Flood &amp; Heavy Rain
+</td>
+<td align="right">
+2
+</td>
+</tr>
+<tr>
+<td>
+Flood Flash
+</td>
+<td align="right">
+3
+</td>
+</tr>
+<tr>
+<td>
+Flood Flood/Flash
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Flood Watch/
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Flood/Flash
+</td>
+<td align="right">
+2
+</td>
+</tr>
+<tr>
+<td>
+Flood/Flash Flood
+</td>
+<td align="right">
+625
+</td>
+</tr>
+<tr>
+<td>
+Flood/Flash Flooding
+</td>
+<td align="right">
+2
+</td>
+</tr>
+<tr>
+<td>
+Flood/Flash/Flood
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Flood/Flashflood
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Flood/Rain/Wind
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Flood/Rain/Winds
+</td>
+<td align="right">
+6
+</td>
+</tr>
+<tr>
+<td>
+Flood/River Flood
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Flood/Strong Wind
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Flooding
+</td>
+<td align="right">
+120
+</td>
+</tr>
+<tr>
+<td>
+Flooding/Heavy Rain
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Floods
+</td>
+<td align="right">
+3
+</td>
+</tr>
+<tr>
+<td>
+Fog
+</td>
+<td align="right">
+538
+</td>
+</tr>
+<tr>
+<td>
+Fog And Cold Temperatures
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Forest Fires
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Freeze
+</td>
+<td align="right">
+76
+</td>
+</tr>
+<tr>
+<td>
+Freezing Drizzle
+</td>
+<td align="right">
+24
+</td>
+</tr>
+<tr>
+<td>
+Freezing Drizzle And Freezing
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Freezing Fog
+</td>
+<td align="right">
+8
+</td>
+</tr>
+<tr>
+<td>
+Freezing Rain
+</td>
+<td align="right">
+260
+</td>
+</tr>
+<tr>
+<td>
+Freezing Rain And Sleet
+</td>
+<td align="right">
+6
+</td>
+</tr>
+<tr>
+<td>
+Freezing Rain And Snow
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Freezing Rain Sleet And
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Freezing Rain Sleet And Light
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Freezing Rain/Sleet
+</td>
+<td align="right">
+9
+</td>
+</tr>
+<tr>
+<td>
+Freezing Rain/Snow
+</td>
+<td align="right">
+4
+</td>
+</tr>
+<tr>
+<td>
+Freezing Spray
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Frost
+</td>
+<td align="right">
+57
+</td>
+</tr>
+<tr>
+<td>
+Frost/Freeze
+</td>
+<td align="right">
+367
+</td>
+</tr>
+<tr>
+<td>
+Frost
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Funnel
+</td>
+<td align="right">
+46
+</td>
+</tr>
+<tr>
+<td>
+Funnel Cloud
+</td>
+<td align="right">
+4588
+</td>
+</tr>
+<tr>
+<td>
+Funnel Cloud.
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Funnel Cloud/Hail
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Funnel Clouds
+</td>
+<td align="right">
+87
+</td>
+</tr>
+<tr>
+<td>
+Funnels
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Glaze
+</td>
+<td align="right">
+43
+</td>
+</tr>
+<tr>
+<td>
+Glaze Ice
+</td>
+<td align="right">
+2
+</td>
+</tr>
+<tr>
+<td>
+Glaze/Ice Storm
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Gradient Wind
+</td>
+<td align="right">
+9
+</td>
+</tr>
+<tr>
+<td>
+Gradient Winds
+</td>
+<td align="right">
+8
+</td>
+</tr>
+<tr>
+<td>
+Grass Fires
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Ground Blizzard
+</td>
+<td align="right">
+2
+</td>
+</tr>
+<tr>
+<td>
+Gustnado
+</td>
+<td align="right">
+6
+</td>
+</tr>
+<tr>
+<td>
+Gustnado And
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Gusty Lake Wind
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Gusty Thunderstorm Wind
+</td>
+<td align="right">
+3
+</td>
+</tr>
+<tr>
+<td>
+Gusty Thunderstorm Winds
+</td>
+<td align="right">
+5
+</td>
+</tr>
+<tr>
+<td>
+Gusty Wind
+</td>
+<td align="right">
+24
+</td>
+</tr>
+<tr>
+<td>
+Gusty Wind/Hail
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Gusty Wind/Hvy Rain
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Gusty Wind/Rain
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Gusty Winds
+</td>
+<td align="right">
+65
+</td>
+</tr>
+<tr>
+<td>
+Hail
+</td>
+<td align="right">
+216408
+</td>
+</tr>
+<tr>
+<td>
+Hail 0.75
+</td>
+<td align="right">
+18
+</td>
+</tr>
+<tr>
+<td>
+Hail 0.88
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Hail 075
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Hail 088
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Hail 1.00
+</td>
+<td align="right">
+6
+</td>
+</tr>
+<tr>
+<td>
+Hail 1.75
+</td>
+<td align="right">
+4
+</td>
+</tr>
+<tr>
+<td>
+Hail 1.75)
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Hail 100
+</td>
+<td align="right">
+13
+</td>
+</tr>
+<tr>
+<td>
+Hail 125
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Hail 150
+</td>
+<td align="right">
+2
+</td>
+</tr>
+<tr>
+<td>
+Hail 175
+</td>
+<td align="right">
+13
+</td>
+</tr>
+<tr>
+<td>
+Hail 200
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Hail 225
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Hail 275
+</td>
+<td align="right">
+3
+</td>
+</tr>
+<tr>
+<td>
+Hail 450
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Hail 75
+</td>
+<td align="right">
+29
+</td>
+</tr>
+<tr>
+<td>
+Hail 80
+</td>
+<td align="right">
+2
+</td>
+</tr>
+<tr>
+<td>
+Hail 88
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Hail Aloft
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Hail Damage
+</td>
+<td align="right">
+2
+</td>
+</tr>
+<tr>
+<td>
+Hail Flooding
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Hail Storm
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Hail(0.75)
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Hail/Icy Roads
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Hail/Wind
+</td>
+<td align="right">
+3
+</td>
+</tr>
+<tr>
+<td>
+Hail/Winds
+</td>
+<td align="right">
+2
+</td>
+</tr>
+<tr>
+<td>
+Hailstorm
+</td>
+<td align="right">
+3
+</td>
+</tr>
+<tr>
+<td>
+Hailstorms
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Hard Freeze
+</td>
+<td align="right">
+7
+</td>
+</tr>
+<tr>
+<td>
+Hazardous Surf
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Heat
+</td>
+<td align="right">
+146
+</td>
+</tr>
+<tr>
+<td>
+Heat Drought
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Heat Wave
+</td>
+<td align="right">
+75
+</td>
+</tr>
+<tr>
+<td>
+Heat Wave Drought
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Heat Waves
+</td>
+<td align="right">
+2
+</td>
+</tr>
+<tr>
+<td>
+Heat/Drought
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Heatburst
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Heavy Lake Snow
+</td>
+<td align="right">
+25
+</td>
+</tr>
+<tr>
+<td>
+Heavy Mix
+</td>
+<td align="right">
+8
+</td>
+</tr>
+<tr>
+<td>
+Heavy Precipatation
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Heavy Precipitation
+</td>
+<td align="right">
+3
+</td>
+</tr>
+<tr>
+<td>
+Heavy Rain
+</td>
+<td align="right">
+6741
+</td>
+</tr>
+<tr>
+<td>
+Heavy Rain And Flood
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Heavy Rain And Wind
+</td>
+<td align="right">
+4
+</td>
+</tr>
+<tr>
+<td>
+Heavy Rain Effects
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Heavy Rain/Flooding
+</td>
+<td align="right">
+2
+</td>
+</tr>
+<tr>
+<td>
+Heavy Rain/High Surf
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Heavy Rain/Lightning
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Heavy Rain/Mudslides/Flood
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Heavy Rain/Severe Weather
+</td>
+<td align="right">
+2
+</td>
+</tr>
+<tr>
+<td>
+Heavy Rain/Small Stream Urban
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Heavy Rain/Snow
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Heavy Rain/Urban Flood
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Heavy Rain/Wind
+</td>
+<td align="right">
+4
+</td>
+</tr>
+<tr>
+<td>
+Heavy Rain; Urban Flood Winds;
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Heavy Rainfall
+</td>
+<td align="right">
+3
+</td>
+</tr>
+<tr>
+<td>
+Heavy Rains
+</td>
+<td align="right">
+26
+</td>
+</tr>
+<tr>
+<td>
+Heavy Rains/Flooding
+</td>
+<td align="right">
+9
+</td>
+</tr>
+<tr>
+<td>
+Heavy Seas
+</td>
+<td align="right">
+2
+</td>
+</tr>
+<tr>
+<td>
+Heavy Shower
+</td>
+<td align="right">
+2
+</td>
+</tr>
+<tr>
+<td>
+Heavy Showers
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Heavy Snow
+</td>
+<td align="right">
+10080
+</td>
+</tr>
+<tr>
+<td>
+Heavy Snow-Squalls
+</td>
+<td align="right">
+15
+</td>
+</tr>
+<tr>
+<td>
+Heavy Snow Freezing Rain
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Heavy Snow &amp; Ice
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Heavy Snow And
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Heavy Snow And High Winds
+</td>
+<td align="right">
+2
+</td>
+</tr>
+<tr>
+<td>
+Heavy Snow And Ice
+</td>
+<td align="right">
+2
+</td>
+</tr>
+<tr>
+<td>
+Heavy Snow And Ice Storm
+</td>
+<td align="right">
+2
+</td>
+</tr>
+<tr>
+<td>
+Heavy Snow And Strong Winds
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Heavy Snow Andblowing Snow
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Heavy Snow Shower
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Heavy Snow Squalls
+</td>
+<td align="right">
+32
+</td>
+</tr>
+<tr>
+<td>
+Heavy Snow/Blizzard
+</td>
+<td align="right">
+3
+</td>
+</tr>
+<tr>
+<td>
+Heavy Snow/Blizzard/Avalanche
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Heavy Snow/Blowing Snow
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Heavy Snow/Freezing Rain
+</td>
+<td align="right">
+2
+</td>
+</tr>
+<tr>
+<td>
+Heavy Snow/High
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Heavy Snow/High Wind
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Heavy Snow/High Winds
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Heavy Snow/High Winds &amp; Flood
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Heavy Snow/High Winds/Freezing
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Heavy Snow/Ice
+</td>
+<td align="right">
+5
+</td>
+</tr>
+<tr>
+<td>
+Heavy Snow/Ice Storm
+</td>
+<td align="right">
+2
+</td>
+</tr>
+<tr>
+<td>
+Heavy Snow/Sleet
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Heavy Snow/Squalls
+</td>
+<td align="right">
+2
+</td>
+</tr>
+<tr>
+<td>
+Heavy Snow/Wind
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Heavy Snow/Winter Storm
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Heavy Snowpack
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Heavy Surf
+</td>
+<td align="right">
+87
+</td>
+</tr>
+<tr>
+<td>
+Heavy Surf And Wind
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Heavy Surf Coastal Flooding
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Heavy Surf/High Surf
+</td>
+<td align="right">
+228
+</td>
+</tr>
+<tr>
+<td>
+Heavy Swells
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Heavy Wet Snow
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+High
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+High Swells
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+High Winds
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+High Seas
+</td>
+<td align="right">
+8
+</td>
+</tr>
+<tr>
+<td>
+High Surf
+</td>
+<td align="right">
+360
+</td>
+</tr>
+<tr>
+<td>
+High Surf Advisories
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+High Surf Advisory
+</td>
+<td align="right">
+5
+</td>
+</tr>
+<tr>
+<td>
+High Swells
+</td>
+<td align="right">
+5
+</td>
+</tr>
+<tr>
+<td>
+High Temperature Record
+</td>
+<td align="right">
+3
+</td>
+</tr>
+<tr>
+<td>
+High Tides
+</td>
+<td align="right">
+2
+</td>
+</tr>
+<tr>
+<td>
+High Water
+</td>
+<td align="right">
+6
+</td>
+</tr>
+<tr>
+<td>
+High Waves
+</td>
+<td align="right">
+3
+</td>
+</tr>
+<tr>
+<td>
+High Wind
+</td>
+<td align="right">
+9824
+</td>
+</tr>
+<tr>
+<td>
+High Wind (G40)
+</td>
+<td align="right">
+2
+</td>
+</tr>
+<tr>
+<td>
+High Wind 48
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+High Wind 63
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+High Wind 70
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+High Wind And Heavy Snow
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+High Wind And High Tides
+</td>
+<td align="right">
+2
+</td>
+</tr>
+<tr>
+<td>
+High Wind And Seas
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+High Wind Damage
+</td>
+<td align="right">
+2
+</td>
+</tr>
+<tr>
+<td>
+High Wind/ Blizzard
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+High Wind/Blizzard
+</td>
+<td align="right">
+6
+</td>
+</tr>
+<tr>
+<td>
+High Wind/Blizzard/Freezing Ra
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+High Wind/Heavy Snow
+</td>
+<td align="right">
+3
+</td>
+</tr>
+<tr>
+<td>
+High Wind/Low Wind Chill
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+High Wind/Seas
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+High Wind/Wind Chill
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+High Wind/Wind Chill/Blizzard
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+High Winds
+</td>
+<td align="right">
+1533
+</td>
+</tr>
+<tr>
+<td>
+High Winds 55
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+High Winds 57
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+High Winds 58
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+High Winds 63
+</td>
+<td align="right">
+2
+</td>
+</tr>
+<tr>
+<td>
+High Winds 66
+</td>
+<td align="right">
+2
+</td>
+</tr>
+<tr>
+<td>
+High Winds 67
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+High Winds 73
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+High Winds 76
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+High Winds 80
+</td>
+<td align="right">
+2
+</td>
+</tr>
+<tr>
+<td>
+High Winds 82
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+High Winds And Wind Chill
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+High Winds Dust Storm
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+High Winds Heavy Rains
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+High Winds/
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+High Winds/Coastal Flood
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+High Winds/Cold
+</td>
+<td align="right">
+5
+</td>
+</tr>
+<tr>
+<td>
+High Winds/Flooding
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+High Winds/Heavy Rain
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+High Winds/Snow
+</td>
+<td align="right">
+3
+</td>
+</tr>
+<tr>
+<td>
+Highway Flooding
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Hot And Dry
+</td>
+<td align="right">
+2
+</td>
+</tr>
+<tr>
+<td>
+Hot Pattern
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Hot Spell
+</td>
+<td align="right">
+2
+</td>
+</tr>
+<tr>
+<td>
+Hot Weather
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Hot/Dry Pattern
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Hurricane
+</td>
+<td align="right">
+141
+</td>
+</tr>
+<tr>
+<td>
+Hurricane-Generated Swells
+</td>
+<td align="right">
+3
+</td>
+</tr>
+<tr>
+<td>
+Hurricane Edouard
+</td>
+<td align="right">
+2
+</td>
+</tr>
+<tr>
+<td>
+Hurricane Emily
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Hurricane Erin
+</td>
+<td align="right">
+7
+</td>
+</tr>
+<tr>
+<td>
+Hurricane Felix
+</td>
+<td align="right">
+2
+</td>
+</tr>
+<tr>
+<td>
+Hurricane Gordon
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Hurricane Opal
+</td>
+<td align="right">
+9
+</td>
+</tr>
+<tr>
+<td>
+Hurricane Opal/High Winds
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Hurricane/Typhoon
+</td>
+<td align="right">
+88
+</td>
+</tr>
+<tr>
+<td>
+Hvy Rain
+</td>
+<td align="right">
+2
+</td>
+</tr>
+<tr>
+<td>
+Hyperthermia/Exposure
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Hypothermia
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Hypothermia/Exposure
+</td>
+<td align="right">
+6
+</td>
+</tr>
+<tr>
+<td>
+Ice
+</td>
+<td align="right">
+61
+</td>
+</tr>
+<tr>
+<td>
+Ice And Snow
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Ice Floes
+</td>
+<td align="right">
+2
+</td>
+</tr>
+<tr>
+<td>
+Ice Fog
+</td>
+<td align="right">
+2
+</td>
+</tr>
+<tr>
+<td>
+Ice Jam
+</td>
+<td align="right">
+4
+</td>
+</tr>
+<tr>
+<td>
+Ice Jam Flood (Minor
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Ice Jam Flooding
+</td>
+<td align="right">
+5
+</td>
+</tr>
+<tr>
+<td>
+Ice On Road
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Ice Pellets
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Ice Roads
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Ice Storm
+</td>
+<td align="right">
+1118
+</td>
+</tr>
+<tr>
+<td>
+Ice Storm And Snow
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Ice Storm/Flash Flood
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Ice/Snow
+</td>
+<td align="right">
+5
+</td>
+</tr>
+<tr>
+<td>
+Ice/Strong Winds
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Icestorm/Blizzard
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Icy Roads
+</td>
+<td align="right">
+32
+</td>
+</tr>
+<tr>
+<td>
+Lack Of Snow
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Lake-Effect Snow
+</td>
+<td align="right">
+72
+</td>
+</tr>
+<tr>
+<td>
+Lake Effect Snow
+</td>
+<td align="right">
+23
+</td>
+</tr>
+<tr>
+<td>
+Lake Flood
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Lakeshore Flood
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Landslide
+</td>
+<td align="right">
+299
+</td>
+</tr>
+<tr>
+<td>
+Landslide/Urban Flood
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Landslides
+</td>
+<td align="right">
+8
+</td>
+</tr>
+<tr>
+<td>
+Landslump
+</td>
+<td align="right">
+2
+</td>
+</tr>
+<tr>
+<td>
+Landspout
+</td>
+<td align="right">
+2
+</td>
+</tr>
+<tr>
+<td>
+Large Wall Cloud
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Late-Season Snowfall
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Late Freeze
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Late Season Hail
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Late Season Snow
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Late Season Snowfall
+</td>
+<td align="right">
+2
+</td>
+</tr>
+<tr>
+<td>
+Late Snow
+</td>
+<td align="right">
+2
+</td>
+</tr>
+<tr>
+<td>
+Light Freezing Rain
+</td>
+<td align="right">
+23
+</td>
+</tr>
+<tr>
+<td>
+Light Snow
+</td>
+<td align="right">
+176
+</td>
+</tr>
+<tr>
+<td>
+Light Snow And Sleet
+</td>
+<td align="right">
+2
+</td>
+</tr>
+<tr>
+<td>
+Light Snow/Flurries
+</td>
+<td align="right">
+3
+</td>
+</tr>
+<tr>
+<td>
+Light Snow/Freezing Precip
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Light Snowfall
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Lighting
+</td>
+<td align="right">
+3
+</td>
+</tr>
+<tr>
+<td>
+Lightning
+</td>
+<td align="right">
+11881
+</td>
+</tr>
+<tr>
+<td>
+Lightning Wauseon
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Lightning And Heavy Rain
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Lightning And Thunderstorm Win
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Lightning And Winds
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Lightning Damage
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Lightning Fire
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Lightning Injury
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Lightning Thunderstorm Winds
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Lightning Thunderstorm Windss
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Lightning.
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Lightning/Heavy Rain
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Ligntning
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Local Flash Flood
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Local Flood
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Locally Heavy Rain
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Low Temperature
+</td>
+<td align="right">
+7
+</td>
+</tr>
+<tr>
+<td>
+Low Temperature Record
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Low Wind Chill
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Major Flood
+</td>
+<td align="right">
+3
+</td>
+</tr>
+<tr>
+<td>
+Marine Accident
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Marine Hail
+</td>
+<td align="right">
+242
+</td>
+</tr>
+<tr>
+<td>
+Marine High Wind
+</td>
+<td align="right">
+12
+</td>
+</tr>
+<tr>
+<td>
+Marine Mishap
+</td>
+<td align="right">
+2
+</td>
+</tr>
+<tr>
+<td>
+Marine Strong Wind
+</td>
+<td align="right">
+4
+</td>
+</tr>
+<tr>
+<td>
+Marine Thunderstorm Wind
+</td>
+<td align="right">
+127
+</td>
+</tr>
+<tr>
+<td>
+Marine Tstm Wind
+</td>
+<td align="right">
+6175
+</td>
+</tr>
+<tr>
+<td>
+Metro Storm, May 26
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Microburst
+</td>
+<td align="right">
+9
+</td>
+</tr>
+<tr>
+<td>
+Microburst Winds
+</td>
+<td align="right">
+5
+</td>
+</tr>
+<tr>
+<td>
+Mild And Dry Pattern
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Mild Pattern
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Mild/Dry Pattern
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Minor Flood
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Minor Flooding
+</td>
+<td align="right">
+4
+</td>
+</tr>
+<tr>
+<td>
+Mixed Precip
+</td>
+<td align="right">
+10
+</td>
+</tr>
+<tr>
+<td>
+Mixed Precipitation
+</td>
+<td align="right">
+37
+</td>
+</tr>
+<tr>
+<td>
+Moderate Snow
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Moderate Snowfall
+</td>
+<td align="right">
+101
+</td>
+</tr>
+<tr>
+<td>
+Monthly Precipitation
+</td>
+<td align="right">
+36
+</td>
+</tr>
+<tr>
+<td>
+Monthly Rainfall
+</td>
+<td align="right">
+13
+</td>
+</tr>
+<tr>
+<td>
+Monthly Snowfall
+</td>
+<td align="right">
+2
+</td>
+</tr>
+<tr>
+<td>
+Monthly Temperature
+</td>
+<td align="right">
+4
+</td>
+</tr>
+<tr>
+<td>
+Mountain Snows
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Mud Slide
+</td>
+<td align="right">
+7
+</td>
+</tr>
+<tr>
+<td>
+Mud Slides
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Mud Slides Urban Flooding
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Mud/Rock Slide
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Mudslide
+</td>
+<td align="right">
+17
+</td>
+</tr>
+<tr>
+<td>
+Mudslide/Landslide
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Mudslides
+</td>
+<td align="right">
+9
+</td>
+</tr>
+<tr>
+<td>
+Near Record Snow
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+No Severe Weather
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Non-Severe Wind Damage
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Non-Tstm Wind
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Non Severe Hail
+</td>
+<td align="right">
+7
+</td>
+</tr>
+<tr>
+<td>
+Non Tstm Wind
+</td>
+<td align="right">
+2
+</td>
+</tr>
+<tr>
+<td>
+None
+</td>
+<td align="right">
+2
+</td>
+</tr>
+<tr>
+<td>
+Normal Precipitation
+</td>
+<td align="right">
+3
+</td>
+</tr>
+<tr>
+<td>
+Northern Lights
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Other
+</td>
+<td align="right">
+52
+</td>
+</tr>
+<tr>
+<td>
+Patchy Dense Fog
+</td>
+<td align="right">
+3
+</td>
+</tr>
+<tr>
+<td>
+Patchy Ice
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Prolong Cold
+</td>
+<td align="right">
+22
+</td>
+</tr>
+<tr>
+<td>
+Prolong Cold/Snow
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Prolong Warmth
+</td>
+<td align="right">
+4
+</td>
+</tr>
+<tr>
+<td>
+Prolonged Rain
+</td>
+<td align="right">
+4
+</td>
+</tr>
+<tr>
+<td>
+Rain
+</td>
+<td align="right">
+16
+</td>
+</tr>
+<tr>
+<td>
+Rain (Heavy)
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Rain And Wind
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Rain Damage
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Rain/Snow
+</td>
+<td align="right">
+5
+</td>
+</tr>
+<tr>
+<td>
+Rain/Wind
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Rainstorm
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Rapidly Rising Water
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Record Cold
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Record Cold
+</td>
+<td align="right">
+67
+</td>
+</tr>
+<tr>
+<td>
+Record Cold And High Wind
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Record Cold/Frost
+</td>
+<td align="right">
+2
+</td>
+</tr>
+<tr>
+<td>
+Record Cool
+</td>
+<td align="right">
+5
+</td>
+</tr>
+<tr>
+<td>
+Record Dry Month
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Record Dryness
+</td>
+<td align="right">
+2
+</td>
+</tr>
+<tr>
+<td>
+Record Heat
+</td>
+<td align="right">
+82
+</td>
+</tr>
+<tr>
+<td>
+Record Heat Wave
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Record High
+</td>
+<td align="right">
+7
+</td>
+</tr>
+<tr>
+<td>
+Record High Temperature
+</td>
+<td align="right">
+3
+</td>
+</tr>
+<tr>
+<td>
+Record High Temperatures
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Record Low
+</td>
+<td align="right">
+4
+</td>
+</tr>
+<tr>
+<td>
+Record Low Rainfall
+</td>
+<td align="right">
+2
+</td>
+</tr>
+<tr>
+<td>
+Record May Snow
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Record Precipitation
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Record Rainfall
+</td>
+<td align="right">
+14
+</td>
+</tr>
+<tr>
+<td>
+Record Snow
+</td>
+<td align="right">
+8
+</td>
+</tr>
+<tr>
+<td>
+Record Snow/Cold
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Record Snowfall
+</td>
+<td align="right">
+6
+</td>
+</tr>
+<tr>
+<td>
+Record Temperature
+</td>
+<td align="right">
+16
+</td>
+</tr>
+<tr>
+<td>
+Record Temperatures
+</td>
+<td align="right">
+5
+</td>
+</tr>
+<tr>
+<td>
+Record Warm
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Record Warm Temps.
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Record Warmth
+</td>
+<td align="right">
+154
+</td>
+</tr>
+<tr>
+<td>
+Record Winter Snow
+</td>
+<td align="right">
+3
+</td>
+</tr>
+<tr>
+<td>
+Record/Excessive Heat
+</td>
+<td align="right">
+3
+</td>
+</tr>
+<tr>
+<td>
+Record/Excessive Rainfall
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Red Flag Criteria
+</td>
+<td align="right">
+2
+</td>
+</tr>
+<tr>
+<td>
+Red Flag Fire Wx
+</td>
+<td align="right">
+2
+</td>
+</tr>
+<tr>
+<td>
+Remnants Of Floyd
+</td>
+<td align="right">
+2
+</td>
+</tr>
+<tr>
+<td>
+Rip Current
+</td>
+<td align="right">
+198
+</td>
+</tr>
+<tr>
+<td>
+Rip Currents
+</td>
+<td align="right">
+304
+</td>
+</tr>
+<tr>
+<td>
+Rip Currents Heavy Surf
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Rip Currents/Heavy Surf
+</td>
+<td align="right">
+2
+</td>
+</tr>
+<tr>
+<td>
+River And Stream Flood
+</td>
+<td align="right">
+2
+</td>
+</tr>
+<tr>
+<td>
+River Flood
+</td>
+<td align="right">
+173
+</td>
+</tr>
+<tr>
+<td>
+River Flooding
+</td>
+<td align="right">
+29
+</td>
+</tr>
+<tr>
+<td>
+Rock Slide
+</td>
+<td align="right">
+2
+</td>
+</tr>
+<tr>
+<td>
+Rogue Wave
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Rotating Wall Cloud
+</td>
+<td align="right">
+5
+</td>
+</tr>
+<tr>
+<td>
+Rough Seas
+</td>
+<td align="right">
+3
+</td>
+</tr>
+<tr>
+<td>
+Rough Surf
+</td>
+<td align="right">
+4
+</td>
+</tr>
+<tr>
+<td>
+Rural Flood
+</td>
+<td align="right">
+2
+</td>
+</tr>
+<tr>
+<td>
+Saharan Dust
+</td>
+<td align="right">
+4
+</td>
+</tr>
+<tr>
+<td>
+Seasonal Snowfall
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Seiche
+</td>
+<td align="right">
+15
+</td>
+</tr>
+<tr>
+<td>
+Severe Cold
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Severe Thunderstorm
+</td>
+<td align="right">
+13
+</td>
+</tr>
+<tr>
+<td>
+Severe Thunderstorm Winds
+</td>
+<td align="right">
+5
+</td>
+</tr>
+<tr>
+<td>
+Severe Thunderstorms
+</td>
+<td align="right">
+23
+</td>
+</tr>
+<tr>
+<td>
+Severe Turbulence
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Sleet
+</td>
+<td align="right">
+11
+</td>
+</tr>
+<tr>
+<td>
+Sleet &amp; Freezing Rain
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Sleet Storm
+</td>
+<td align="right">
+12
+</td>
+</tr>
+<tr>
+<td>
+Sleet/Freezing Rain
+</td>
+<td align="right">
+2
+</td>
+</tr>
+<tr>
+<td>
+Sleet/Ice Storm
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Sleet/Rain/Snow
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Sleet/Snow
+</td>
+<td align="right">
+2
+</td>
+</tr>
+<tr>
+<td>
+Small Hail
+</td>
+<td align="right">
+53
+</td>
+</tr>
+<tr>
+<td>
+Small Stream
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Small Stream And
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Small Stream And Urban Flood
+</td>
+<td align="right">
+2
+</td>
+</tr>
+<tr>
+<td>
+Small Stream And Urban Floodin
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Small Stream Flood
+</td>
+<td align="right">
+7
+</td>
+</tr>
+<tr>
+<td>
+Small Stream Flooding
+</td>
+<td align="right">
+4
+</td>
+</tr>
+<tr>
+<td>
+Small Stream Urban Flood
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Small Stream/Urban Flood
+</td>
+<td align="right">
+5
+</td>
+</tr>
+<tr>
+<td>
+Sml Stream Fld
+</td>
+<td align="right">
+2
+</td>
+</tr>
+<tr>
+<td>
+Smoke
+</td>
+<td align="right">
+11
+</td>
+</tr>
+<tr>
+<td>
+Snow
+</td>
+<td align="right">
+617
+</td>
+</tr>
+<tr>
+<td>
+Snow- High Wind- Wind Chill
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Snow Accumulation
+</td>
+<td align="right">
+2
+</td>
+</tr>
+<tr>
+<td>
+Snow Advisory
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Snow And Cold
+</td>
+<td align="right">
+2
+</td>
+</tr>
+<tr>
+<td>
+Snow And Heavy Snow
+</td>
+<td align="right">
+2
+</td>
+</tr>
+<tr>
+<td>
+Snow And Ice
+</td>
+<td align="right">
+34
+</td>
+</tr>
+<tr>
+<td>
+Snow And Ice Storm
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Snow And Sleet
+</td>
+<td align="right">
+5
+</td>
+</tr>
+<tr>
+<td>
+Snow And Wind
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Snow Drought
+</td>
+<td align="right">
+7
+</td>
+</tr>
+<tr>
+<td>
+Snow Freezing Rain
+</td>
+<td align="right">
+11
+</td>
+</tr>
+<tr>
+<td>
+Snow Showers
+</td>
+<td align="right">
+6
+</td>
+</tr>
+<tr>
+<td>
+Snow Sleet
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Snow Squall
+</td>
+<td align="right">
+19
+</td>
+</tr>
+<tr>
+<td>
+Snow Squalls
+</td>
+<td align="right">
+22
+</td>
+</tr>
+<tr>
+<td>
+Snow/ Bitter Cold
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Snow/ Ice
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Snow/Blowing Snow
+</td>
+<td align="right">
+7
+</td>
+</tr>
+<tr>
+<td>
+Snow/Cold
+</td>
+<td align="right">
+2
+</td>
+</tr>
+<tr>
+<td>
+Snow/Freezing Rain
+</td>
+<td align="right">
+6
+</td>
+</tr>
+<tr>
+<td>
+Snow/Heavy Snow
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Snow/High Winds
+</td>
+<td align="right">
+2
+</td>
+</tr>
+<tr>
+<td>
+Snow/Ice
+</td>
+<td align="right">
+7
+</td>
+</tr>
+<tr>
+<td>
+Snow/Ice Storm
+</td>
+<td align="right">
+17
+</td>
+</tr>
+<tr>
+<td>
+Snow/Rain
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Snow/Rain/Sleet
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Snow/Sleet
+</td>
+<td align="right">
+10
+</td>
+</tr>
+<tr>
+<td>
+Snow/Sleet/Freezing Rain
+</td>
+<td align="right">
+6
+</td>
+</tr>
+<tr>
+<td>
+Snow/Sleet/Rain
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Snow
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Snowfall Record
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Snowmelt Flooding
+</td>
+<td align="right">
+5
+</td>
+</tr>
+<tr>
+<td>
+Snowstorm
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Southeast
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Storm Force Winds
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Storm Surge
+</td>
+<td align="right">
+261
+</td>
+</tr>
+<tr>
+<td>
+Storm Surge/Tide
+</td>
+<td align="right">
+14
+</td>
+</tr>
+<tr>
+<td>
+Stream Flooding
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Street Flood
+</td>
+<td align="right">
+3
+</td>
+</tr>
+<tr>
+<td>
+Street Flooding
+</td>
+<td align="right">
+3
+</td>
+</tr>
+<tr>
+<td>
+Strong Wind
+</td>
+<td align="right">
+1144
+</td>
+</tr>
+<tr>
+<td>
+Strong Wind Gust
+</td>
+<td align="right">
+2
+</td>
+</tr>
+<tr>
+<td>
+Strong Winds
+</td>
+<td align="right">
+204
+</td>
+</tr>
+<tr>
+<td>
+Summary August 10
+</td>
+<td align="right">
+2
+</td>
+</tr>
+<tr>
+<td>
+Summary August 11
+</td>
+<td align="right">
+2
+</td>
+</tr>
+<tr>
+<td>
+Summary August 17
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Summary August 2-3
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Summary August 21
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Summary August 28
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Summary August 4
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Summary August 7
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Summary August 9
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Summary Jan 17
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Summary July 23-24
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Summary June 18-19
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Summary June 5-6
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Summary June 6
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Summary Of April 12
+</td>
+<td align="right">
+2
+</td>
+</tr>
+<tr>
+<td>
+Summary Of April 13
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Summary Of April 21
+</td>
+<td align="right">
+2
+</td>
+</tr>
+<tr>
+<td>
+Summary Of April 27
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Summary Of April 3rd
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Summary Of August 1
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Summary Of July 11
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Summary Of July 2
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Summary Of July 22
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Summary Of July 26
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Summary Of July 29
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Summary Of July 3
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Summary Of June 10
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Summary Of June 11
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Summary Of June 12
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Summary Of June 13
+</td>
+<td align="right">
+2
+</td>
+</tr>
+<tr>
+<td>
+Summary Of June 15
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Summary Of June 16
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Summary Of June 18
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Summary Of June 23
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Summary Of June 24
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Summary Of June 3
+</td>
+<td align="right">
+2
+</td>
+</tr>
+<tr>
+<td>
+Summary Of June 30
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Summary Of June 4
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Summary Of June 6
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Summary Of March 14
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Summary Of March 23
+</td>
+<td align="right">
+2
+</td>
+</tr>
+<tr>
+<td>
+Summary Of March 24
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Summary Of March 24-25
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Summary Of March 27
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Summary Of March 29
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Summary Of May 10
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Summary Of May 13
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Summary Of May 14
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Summary Of May 22
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Summary Of May 22 Am
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Summary Of May 22 Pm
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Summary Of May 26 Am
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Summary Of May 26 Pm
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Summary Of May 31 Am
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Summary Of May 31 Pm
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Summary Of May 9-10
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Summary Sept. 25-26
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Summary September 20
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Summary September 23
+</td>
+<td align="right">
+2
+</td>
+</tr>
+<tr>
+<td>
+Summary September 3
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Summary September 4
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Summary: Nov. 16
+</td>
+<td align="right">
+2
+</td>
+</tr>
+<tr>
+<td>
+Summary: Nov. 6-7
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Summary: Oct. 20-21
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Summary: October 31
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Summary: Sept. 18
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Temperature Record
+</td>
+<td align="right">
+43
+</td>
+</tr>
+<tr>
+<td>
+Thuderstorm Winds
+</td>
+<td align="right">
+2
+</td>
+</tr>
+<tr>
+<td>
+Thundeerstorm Winds
+</td>
+<td align="right">
+2
+</td>
+</tr>
+<tr>
+<td>
+Thunderestorm Winds
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Thundersnow
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Thundersnow Shower
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Thunderstorm
+</td>
+<td align="right">
+45
+</td>
+</tr>
+<tr>
+<td>
+Thunderstorm Winds
+</td>
+<td align="right">
+7
+</td>
+</tr>
+<tr>
+<td>
+Thunderstorm Damage
+</td>
+<td align="right">
+2
+</td>
+</tr>
+<tr>
+<td>
+Thunderstorm Damage To
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Thunderstorm Hail
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Thunderstorm W Inds
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Thunderstorm Wind
+</td>
+<td align="right">
+1901
+</td>
+</tr>
+<tr>
+<td>
+Thunderstorm Wind (G40)
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Thunderstorm Wind 50
+</td>
+<td align="right">
+2
+</td>
+</tr>
+<tr>
+<td>
+Thunderstorm Wind 52
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Thunderstorm Wind 56
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Thunderstorm Wind 59
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Thunderstorm Wind 59 Mph
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Thunderstorm Wind 59 Mph.
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Thunderstorm Wind 60 Mph
+</td>
+<td align="right">
+4
+</td>
+</tr>
+<tr>
+<td>
+Thunderstorm Wind 65 Mph
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Thunderstorm Wind 65mph
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Thunderstorm Wind 69
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Thunderstorm Wind 98 Mph
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Thunderstorm Wind G50
+</td>
+<td align="right">
+4
+</td>
+</tr>
+<tr>
+<td>
+Thunderstorm Wind G51
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Thunderstorm Wind G52
+</td>
+<td align="right">
+2
+</td>
+</tr>
+<tr>
+<td>
+Thunderstorm Wind G55
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Thunderstorm Wind G60
+</td>
+<td align="right">
+2
+</td>
+</tr>
+<tr>
+<td>
+Thunderstorm Wind G61
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Thunderstorm Wind Trees
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Thunderstorm Wind.
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Thunderstorm Wind/ Tree
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Thunderstorm Wind/ Trees
+</td>
+<td align="right">
+4
+</td>
+</tr>
+<tr>
+<td>
+Thunderstorm Wind/Awning
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Thunderstorm Wind/Hail
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Thunderstorm Wind/Lightning
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Thunderstorm Winds
+</td>
+<td align="right">
+20843
+</td>
+</tr>
+<tr>
+<td>
+Thunderstorm Winds Le Cen
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Thunderstorm Winds 13
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Thunderstorm Winds 2
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Thunderstorm Winds 50
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Thunderstorm Winds 52
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Thunderstorm Winds 53
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Thunderstorm Winds 60
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Thunderstorm Winds 61
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Thunderstorm Winds 62
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Thunderstorm Winds 63 Mph
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Thunderstorm Winds And
+</td>
+<td align="right">
+2
+</td>
+</tr>
+<tr>
+<td>
+Thunderstorm Winds Funnel Clou
+</td>
+<td align="right">
+2
+</td>
+</tr>
+<tr>
+<td>
+Thunderstorm Winds G
+</td>
+<td align="right">
+2
+</td>
+</tr>
+<tr>
+<td>
+Thunderstorm Winds G60
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Thunderstorm Winds Hail
+</td>
+<td align="right">
+61
+</td>
+</tr>
+<tr>
+<td>
+Thunderstorm Winds Heavy Rain
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Thunderstorm Winds Lightning
+</td>
+<td align="right">
+7
+</td>
+</tr>
+<tr>
+<td>
+Thunderstorm Winds Small Strea
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Thunderstorm Winds Urban Flood
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Thunderstorm Winds.
+</td>
+<td align="right">
+3
+</td>
+</tr>
+<tr>
+<td>
+Thunderstorm Winds/ Flood
+</td>
+<td align="right">
+2
+</td>
+</tr>
+<tr>
+<td>
+Thunderstorm Winds/ Hail
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Thunderstorm Winds/Flash Flood
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Thunderstorm Winds/Flooding
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Thunderstorm Winds/Funnel Clou
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Thunderstorm Winds/Hail
+</td>
+<td align="right">
+24
+</td>
+</tr>
+<tr>
+<td>
+Thunderstorm Winds/Heavy Rain
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Thunderstorm Winds53
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Thunderstorm Windshail
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Thunderstorm Windss
+</td>
+<td align="right">
+51
+</td>
+</tr>
+<tr>
+<td>
+Thunderstorm Wins
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Thunderstorms
+</td>
+<td align="right">
+4
+</td>
+</tr>
+<tr>
+<td>
+Thunderstorms Wind
+</td>
+<td align="right">
+6
+</td>
+</tr>
+<tr>
+<td>
+Thunderstorms Winds
+</td>
+<td align="right">
+14
+</td>
+</tr>
+<tr>
+<td>
+Thunderstormw
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Thunderstormw 50
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Thunderstormw Winds
+</td>
+<td align="right">
+3
+</td>
+</tr>
+<tr>
+<td>
+Thunderstormwinds
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Thunderstrom Wind
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Thunderstrom Winds
+</td>
+<td align="right">
+2
+</td>
+</tr>
+<tr>
+<td>
+Thundertorm Winds
+</td>
+<td align="right">
+3
+</td>
+</tr>
+<tr>
+<td>
+Thundertsorm Wind
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Thundestorm Winds
+</td>
+<td align="right">
+2
+</td>
+</tr>
+<tr>
+<td>
+Thunerstorm Winds
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Tidal Flood
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Tidal Flooding
+</td>
+<td align="right">
+25
+</td>
+</tr>
+<tr>
+<td>
+Tornado
+</td>
+<td align="right">
+52613
+</td>
+</tr>
+<tr>
+<td>
+Tornado Debris
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Tornado F0
+</td>
+<td align="right">
+19
+</td>
+</tr>
+<tr>
+<td>
+Tornado F1
+</td>
+<td align="right">
+4
+</td>
+</tr>
+<tr>
+<td>
+Tornado F2
+</td>
+<td align="right">
+3
+</td>
+</tr>
+<tr>
+<td>
+Tornado F3
+</td>
+<td align="right">
+2
+</td>
+</tr>
+<tr>
+<td>
+Tornado/Waterspout
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Tornadoes
+</td>
+<td align="right">
+2
+</td>
+</tr>
+<tr>
+<td>
+Tornadoes, Tstm Wind, Hail
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Tornados
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Torndao
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Torrential Rain
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Torrential Rainfall
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Tropical Depression
+</td>
+<td align="right">
+34
+</td>
+</tr>
+<tr>
+<td>
+Tropical Storm
+</td>
+<td align="right">
+310
+</td>
+</tr>
+<tr>
+<td>
+Tropical Storm Alberto
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Tropical Storm Dean
+</td>
+<td align="right">
+2
+</td>
+</tr>
+<tr>
+<td>
+Tropical Storm Gordon
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Tropical Storm Jerry
+</td>
+<td align="right">
+3
+</td>
+</tr>
+<tr>
+<td>
+Tstm
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Tstm Heavy Rain
+</td>
+<td align="right">
+3
+</td>
+</tr>
+<tr>
+<td>
+Tstm Wind
+</td>
+<td align="right">
+219946
+</td>
+</tr>
+<tr>
+<td>
+Tstm Wind (G45)
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Tstm Wind (41)
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Tstm Wind (G35)
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Tstm Wind (G40)
+</td>
+<td align="right">
+10
+</td>
+</tr>
+<tr>
+<td>
+Tstm Wind (G45)
+</td>
+<td align="right">
+40
+</td>
+</tr>
+<tr>
+<td>
+Tstm Wind 40
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Tstm Wind 45
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Tstm Wind 50
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Tstm Wind 51
+</td>
+<td align="right">
+2
+</td>
+</tr>
+<tr>
+<td>
+Tstm Wind 52
+</td>
+<td align="right">
+5
+</td>
+</tr>
+<tr>
+<td>
+Tstm Wind 55
+</td>
+<td align="right">
+3
+</td>
+</tr>
+<tr>
+<td>
+Tstm Wind 65)
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Tstm Wind And Lightning
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Tstm Wind Damage
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Tstm Wind G45
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Tstm Wind G58
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Tstm Wind/Hail
+</td>
+<td align="right">
+1028
+</td>
+</tr>
+<tr>
+<td>
+Tstm Winds
+</td>
+<td align="right">
+6
+</td>
+</tr>
+<tr>
+<td>
+Tstm Wnd
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Tstmw
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Tsunami
+</td>
+<td align="right">
+4
+</td>
+</tr>
+<tr>
+<td>
+Tunderstorm Wind
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Typhoon
+</td>
+<td align="right">
+11
+</td>
+</tr>
+<tr>
+<td>
+Unseasonable Cold
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Unseasonably Cold
+</td>
+<td align="right">
+23
+</td>
+</tr>
+<tr>
+<td>
+Unseasonably Cool
+</td>
+<td align="right">
+12
+</td>
+</tr>
+<tr>
+<td>
+Unseasonably Cool &amp; Wet
+</td>
+<td align="right">
+2
+</td>
+</tr>
+<tr>
+<td>
+Unseasonably Dry
+</td>
+<td align="right">
+56
+</td>
+</tr>
+<tr>
+<td>
+Unseasonably Hot
+</td>
+<td align="right">
+10
+</td>
+</tr>
+<tr>
+<td>
+Unseasonably Warm
+</td>
+<td align="right">
+126
+</td>
+</tr>
+<tr>
+<td>
+Unseasonably Warm &amp; Wet
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Unseasonably Warm And Dry
+</td>
+<td align="right">
+13
+</td>
+</tr>
+<tr>
+<td>
+Unseasonably Warm Year
+</td>
+<td align="right">
+2
+</td>
+</tr>
+<tr>
+<td>
+Unseasonably Warm/Wet
+</td>
+<td align="right">
+2
+</td>
+</tr>
+<tr>
+<td>
+Unseasonably Wet
+</td>
+<td align="right">
+19
+</td>
+</tr>
+<tr>
+<td>
+Unseasonal Low Temp
+</td>
+<td align="right">
+2
+</td>
+</tr>
+<tr>
+<td>
+Unseasonal Rain
+</td>
+<td align="right">
+2
+</td>
+</tr>
+<tr>
+<td>
+Unusual Warmth
+</td>
+<td align="right">
+10
+</td>
+</tr>
+<tr>
+<td>
+Unusual/Record Warmth
+</td>
+<td align="right">
+2
+</td>
+</tr>
+<tr>
+<td>
+Unusually Cold
+</td>
+<td align="right">
+8
+</td>
+</tr>
+<tr>
+<td>
+Unusually Late Snow
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Unusually Warm
+</td>
+<td align="right">
+4
+</td>
+</tr>
+<tr>
+<td>
+Urban And Small
+</td>
+<td align="right">
+2
+</td>
+</tr>
+<tr>
+<td>
+Urban And Small Stream
+</td>
+<td align="right">
+3
+</td>
+</tr>
+<tr>
+<td>
+Urban And Small Stream Flood
+</td>
+<td align="right">
+3
+</td>
+</tr>
+<tr>
+<td>
+Urban And Small Stream Floodin
+</td>
+<td align="right">
+6
+</td>
+</tr>
+<tr>
+<td>
+Urban Flood
+</td>
+<td align="right">
+251
+</td>
+</tr>
+<tr>
+<td>
+Urban Flood Landslide
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Urban Flooding
+</td>
+<td align="right">
+99
+</td>
+</tr>
+<tr>
+<td>
+Urban Floods
+</td>
+<td align="right">
+3
+</td>
+</tr>
+<tr>
+<td>
+Urban Small
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Urban Small Stream Flood
+</td>
+<td align="right">
+2
+</td>
+</tr>
+<tr>
+<td>
+Urban/Small
+</td>
+<td align="right">
+2
+</td>
+</tr>
+<tr>
+<td>
+Urban/Small Flooding
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Urban/Small Stream
+</td>
+<td align="right">
+8
+</td>
+</tr>
+<tr>
+<td>
+Urban/Small Stream Flood
+</td>
+<td align="right">
+2
+</td>
+</tr>
+<tr>
+<td>
+Urban/Small Stream Flood
+</td>
+<td align="right">
+30
+</td>
+</tr>
+<tr>
+<td>
+Urban/Small Stream Flooding
+</td>
+<td align="right">
+4
+</td>
+</tr>
+<tr>
+<td>
+Urban/Small Strm Fldg
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Urban/Sml Stream Fld
+</td>
+<td align="right">
+3392
+</td>
+</tr>
+<tr>
+<td>
+Urban/Sml Stream Fldg
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Urban/Street Flooding
+</td>
+<td align="right">
+3
+</td>
+</tr>
+<tr>
+<td>
+Very Dry
+</td>
+<td align="right">
+2
+</td>
+</tr>
+<tr>
+<td>
+Very Warm
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Vog
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Volcanic Ash
+</td>
+<td align="right">
+23
+</td>
+</tr>
+<tr>
+<td>
+Volcanic Ash Plume
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Volcanic Eruption
+</td>
+<td align="right">
+2
+</td>
+</tr>
+<tr>
+<td>
+Wake Low Wind
+</td>
+<td align="right">
+2
+</td>
+</tr>
+<tr>
+<td>
+Wall Cloud
+</td>
+<td align="right">
+5
+</td>
+</tr>
+<tr>
+<td>
+Wall Cloud/Funnel Cloud
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Warm Dry Conditions
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Warm Weather
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Water Spout
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Waterspout
+</td>
+<td align="right">
+2775
+</td>
+</tr>
+<tr>
+<td>
+Waterspout-
+</td>
+<td align="right">
+10
+</td>
+</tr>
+<tr>
+<td>
+Waterspout-Tornado
+</td>
+<td align="right">
+2
+</td>
+</tr>
+<tr>
+<td>
+Waterspout Funnel Cloud
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Waterspout Tornado
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Waterspout/
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Waterspout/ Tornado
+</td>
+<td align="right">
+2
+</td>
+</tr>
+<tr>
+<td>
+Waterspout/Tornado
+</td>
+<td align="right">
+8
+</td>
+</tr>
+<tr>
+<td>
+Waterspouts
+</td>
+<td align="right">
+37
+</td>
+</tr>
+<tr>
+<td>
+Wayterspout
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Wet Micoburst
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Wet Microburst
+</td>
+<td align="right">
+6
+</td>
+</tr>
+<tr>
+<td>
+Wet Month
+</td>
+<td align="right">
+4
+</td>
+</tr>
+<tr>
+<td>
+Wet Snow
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Wet Weather
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Wet Year
+</td>
+<td align="right">
+4
+</td>
+</tr>
+<tr>
+<td>
+Whirlwind
+</td>
+<td align="right">
+3
+</td>
+</tr>
+<tr>
+<td>
+Wild Fires
+</td>
+<td align="right">
+4
+</td>
+</tr>
+<tr>
+<td>
+Wild/Forest Fire
+</td>
+<td align="right">
+1457
+</td>
+</tr>
+<tr>
+<td>
+Wild/Forest Fires
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Wildfire
+</td>
+<td align="right">
+1010
+</td>
+</tr>
+<tr>
+<td>
+Wildfires
+</td>
+<td align="right">
+8
+</td>
+</tr>
+<tr>
+<td>
+Wind
+</td>
+<td align="right">
+347
+</td>
+</tr>
+<tr>
+<td>
+Wind Advisory
+</td>
+<td align="right">
+12
+</td>
+</tr>
+<tr>
+<td>
+Wind And Wave
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Wind Chill
+</td>
+<td align="right">
+18
+</td>
+</tr>
+<tr>
+<td>
+Wind Chill/High Wind
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Wind Damage
+</td>
+<td align="right">
+31
+</td>
+</tr>
+<tr>
+<td>
+Wind Gusts
+</td>
+<td align="right">
+3
+</td>
+</tr>
+<tr>
+<td>
+Wind Storm
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Wind/Hail
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Winds
+</td>
+<td align="right">
+36
+</td>
+</tr>
+<tr>
+<td>
+Winter Mix
+</td>
+<td align="right">
+3
+</td>
+</tr>
+<tr>
+<td>
+Winter Storm
+</td>
+<td align="right">
+5043
+</td>
+</tr>
+<tr>
+<td>
+Winter Storm High Winds
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Winter Storm/High Wind
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Winter Storm/High Winds
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+Winter Storms
+</td>
+<td align="right">
+3
+</td>
+</tr>
+<tr>
+<td>
+Winter Weather
+</td>
+<td align="right">
+566
+</td>
+</tr>
+<tr>
+<td>
+Winter Weather Mix
+</td>
+<td align="right">
+6
+</td>
+</tr>
+<tr>
+<td>
+Winter Weather/Mix
+</td>
+<td align="right">
+1104
+</td>
+</tr>
+<tr>
+<td>
+Wintery Mix
+</td>
+<td align="right">
+2
+</td>
+</tr>
+<tr>
+<td>
+Wintry Mix
+</td>
+<td align="right">
+94
+</td>
+</tr>
+<tr>
+<td>
+Wnd
+</td>
+<td align="right">
+1
+</td>
+</tr>
+</table>
+<pre class="r"><code>print(evt_table_post, include.colnames=TRUE, type=&quot;html&quot;)</code></pre>
+<!-- html table generated in R 4.0.5 by xtable 1.8-4 package -->
+<!-- Sat Aug 07 22:19:26 2021 -->
+<table border="1">
+<caption align="bottom">
+After August 2007 Instruction
+</caption>
+<tr>
+<th>
+</th>
+<th>
+Event Count
+</th>
+</tr>
+<tr>
+<td>
+Astronomical Low Tide
+</td>
+<td align="right">
+130
+</td>
+</tr>
+<tr>
+<td>
+Avalanche
+</td>
+<td align="right">
+122
+</td>
+</tr>
+<tr>
+<td>
+Blizzard
+</td>
+<td align="right">
+1498
+</td>
+</tr>
+<tr>
+<td>
+Coastal Flood
+</td>
+<td align="right">
+330
+</td>
+</tr>
+<tr>
+<td>
+Cold/Wind Chill
+</td>
+<td align="right">
+406
+</td>
+</tr>
+<tr>
+<td>
+Dense Fog
+</td>
+<td align="right">
+640
+</td>
+</tr>
+<tr>
+<td>
+Dense Smoke
+</td>
+<td align="right">
+6
+</td>
+</tr>
+<tr>
+<td>
+Drought
+</td>
+<td align="right">
+996
+</td>
+</tr>
+<tr>
+<td>
+Dust Devil
+</td>
+<td align="right">
+46
+</td>
+</tr>
+<tr>
+<td>
+Dust Storm
+</td>
+<td align="right">
+147
+</td>
+</tr>
+<tr>
+<td>
+Excessive Heat
+</td>
+<td align="right">
+447
+</td>
+</tr>
+<tr>
+<td>
+Extreme Cold/Wind Chill
+</td>
+<td align="right">
+614
+</td>
+</tr>
+<tr>
+<td>
+Flash Flood
+</td>
+<td align="right">
+15408
+</td>
+</tr>
+<tr>
+<td>
+Flood
+</td>
+<td align="right">
+10646
+</td>
+</tr>
+<tr>
+<td>
+Freezing Fog
+</td>
+<td align="right">
+30
+</td>
+</tr>
+<tr>
+<td>
+Frost/Freeze
+</td>
+<td align="right">
+690
+</td>
+</tr>
+<tr>
+<td>
+Funnel Cloud
+</td>
+<td align="right">
+1916
+</td>
+</tr>
+<tr>
+<td>
+Hail
+</td>
+<td align="right">
+59542
+</td>
+</tr>
+<tr>
+<td>
+Heat
+</td>
+<td align="right">
+545
+</td>
+</tr>
+<tr>
+<td>
+Heavy Rain
+</td>
+<td align="right">
+4127
+</td>
+</tr>
+<tr>
+<td>
+Heavy Snow
+</td>
+<td align="right">
+4684
+</td>
+</tr>
+<tr>
+<td>
+High Surf
+</td>
+<td align="right">
+296
+</td>
+</tr>
+<tr>
+<td>
+High Wind
+</td>
+<td align="right">
+8763
+</td>
+</tr>
+<tr>
+<td>
+Hurricane
+</td>
+<td align="right">
+28
+</td>
+</tr>
+<tr>
+<td>
+Ice Storm
+</td>
+<td align="right">
+512
+</td>
+</tr>
+<tr>
+<td>
+Lake-Effect Snow
+</td>
+<td align="right">
+425
+</td>
+</tr>
+<tr>
+<td>
+Lakeshore Flood
+</td>
+<td align="right">
+20
+</td>
+</tr>
+<tr>
+<td>
+Landslide
+</td>
+<td align="right">
+235
+</td>
+</tr>
+<tr>
+<td>
+Lightning
+</td>
+<td align="right">
+3155
+</td>
+</tr>
+<tr>
+<td>
+Marine Hail
+</td>
+<td align="right">
+147
+</td>
+</tr>
+<tr>
+<td>
+Marine High Wind
+</td>
+<td align="right">
+122
+</td>
+</tr>
+<tr>
+<td>
+Marine Strong Wind
+</td>
+<td align="right">
+36
+</td>
+</tr>
+<tr>
+<td>
+Marine Thunderstorm Wind
+</td>
+<td align="right">
+4815
+</td>
+</tr>
+<tr>
+<td>
+Rip Current
+</td>
+<td align="right">
+217
+</td>
+</tr>
+<tr>
+<td>
+Seiche
+</td>
+<td align="right">
+6
+</td>
+</tr>
+<tr>
+<td>
+Sleet
+</td>
+<td align="right">
+40
+</td>
+</tr>
+<tr>
+<td>
+Storm Surge/Tide
+</td>
+<td align="right">
+127
+</td>
+</tr>
+<tr>
+<td>
+Strong Wind
+</td>
+<td align="right">
+2087
+</td>
+</tr>
+<tr>
+<td>
+Thunderstorm Wind
+</td>
+<td align="right">
+67665
+</td>
+</tr>
+<tr>
+<td>
+Tornado
+</td>
+<td align="right">
+6801
+</td>
+</tr>
+<tr>
+<td>
+Tropical Depression
+</td>
+<td align="right">
+21
+</td>
+</tr>
+<tr>
+<td>
+Tropical Storm
+</td>
+<td align="right">
+360
+</td>
+</tr>
+<tr>
+<td>
+Tsunami
+</td>
+<td align="right">
+16
+</td>
+</tr>
+<tr>
+<td>
+Volcanic Ashfall
+</td>
+<td align="right">
+2
+</td>
+</tr>
+<tr>
+<td>
+Waterspout
+</td>
+<td align="right">
+747
+</td>
+</tr>
+<tr>
+<td>
+Wildfire
+</td>
+<td align="right">
+1501
+</td>
+</tr>
+<tr>
+<td>
+Winter Storm
+</td>
+<td align="right">
+5354
+</td>
+</tr>
+<tr>
+<td>
+Winter Weather
+</td>
+<td align="right">
+5347
+</td>
+</tr>
+</table>
+<p>Here we see that the Event Type names distribution prior to August 2007 lacks any regularity, and it would require much effort to standardize these values. There are items like “Dry” and “Dry Conditions” that would need to be collapsed properly, as well as items like “Blizzard” and “Blizzard Weather”; also, it would be unclear how to collapse “Blizzard Summary” with all the other “Blizzard…” entries, or “Excessive” with all of the other “Excessive…” entries. There are numerous other such difficulties with the pre-2007 data.</p>
+<p>On the other hand, we can see that the Event Type names fit the regularity demanded by NWS Instruction 10-1605.</p>
+<p>We are looking to understand how weather events impact people physically and economically. Recent annual data covering the years 2008, 2009, 2010, and 2011, should suffice to deliver the desired indications.</p>
+<p>It is merely left to ensure the coding for the damage scaling fields meet the same regularity as seen for Event Type post-2007.</p>
+<pre class="r"><code>prop_scale_table&lt;-xtable(table(sort(analysisDF$property_damage_scale[analysisDF$begin_year&gt;2007])),caption=&quot;Property Damage Scalings&quot;, align=&quot;lr&quot;) #working on annual est.s later
+names(prop_scale_table)&lt;-c(&quot;Scalings Count&quot;)
+crop_scale_table&lt;-xtable(table(sort(analysisDF$crop_damage_scale[analysisDF$begin_year&gt;2007])), caption=&quot;Crop Damage Scalings&quot;, align=&quot;lr&quot;) #working on annual est.s later
+names(crop_scale_table)&lt;-c(&quot;Scalings Count&quot;)
+
+#dmg_table&lt;-xtable(table(analysisDF$property_damage_scale[analysisDF$begin_year&gt;2007]))
+
+print(prop_scale_table, include.colnames=TRUE, type=&quot;html&quot;)</code></pre>
+<!-- html table generated in R 4.0.5 by xtable 1.8-4 package -->
+<!-- Sat Aug 07 22:19:26 2021 -->
+<table border="1">
+<caption align="bottom">
+Property Damage Scalings
+</caption>
+<tr>
+<th>
+</th>
+<th>
+Scalings Count
+</th>
+</tr>
+<tr>
+<td>
+0
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td>
+B
+</td>
+<td align="right">
+9
+</td>
+</tr>
+<tr>
+<td>
+K
+</td>
+<td align="right">
+209425
+</td>
+</tr>
+<tr>
+<td>
+M
+</td>
+<td align="right">
+2380
+</td>
+</tr>
+</table>
+<pre class="r"><code>print(crop_scale_table, include.colnames=TRUE, type=&quot;html&quot;)</code></pre>
+<!-- html table generated in R 4.0.5 by xtable 1.8-4 package -->
+<!-- Sat Aug 07 22:19:26 2021 -->
+<table border="1">
+<caption align="bottom">
+Crop Damage Scalings
+</caption>
+<tr>
+<th>
+</th>
+<th>
+Scalings Count
+</th>
+</tr>
+<tr>
+<td>
+B
+</td>
+<td align="right">
+2
+</td>
+</tr>
+<tr>
+<td>
+K
+</td>
+<td align="right">
+211312
+</td>
+</tr>
+<tr>
+<td>
+M
+</td>
+<td align="right">
+501
+</td>
+</tr>
+</table>
+<p>So, we see that the scalings have the regularity sought. For property damage, we need only multiply the property damage value in property_damage by the appropriate scaling, as indicated in the property_damage_scale field. For example, if the scale is “K”, we will multiply property_damage by 1,000, and if the scale is “B”, we will multiply property_damage by 10<sup>9</sup>. This same operation wil be performed for the crop_damage estimates using the crop_damage_scale values. Total economic impact will be the sum of these two estimates.</p>
+<pre class="r"><code>#Get numeric factors
+analysisDF&lt;-filter(analysisDF, begin_year&gt;2007) %&gt;% mutate(
+        property_damage_factor=(ifelse(property_damage_scale==&quot;B&quot;,10^9,(ifelse(property_damage_scale==&quot;M&quot;,10^6,(ifelse(property_damage_scale==&quot;K&quot;,10^3,1)))))),
+        crop_damage_factor=(ifelse(crop_damage_scale==&quot;B&quot;,10^9,(ifelse(crop_damage_scale==&quot;M&quot;,10^6,(ifelse(crop_damage_scale==&quot;K&quot;,10^3,1))))))
+        )
+
+#Check mapping
+table(analysisDF$property_damage_factor,analysisDF$property_damage_scale)</code></pre>
+<pre><code>##        
+##              0      B      K      M
+##   1          1      0      0      0
+##   1000       0      0 209425      0
+##   1e+06      0      0      0   2380
+##   1e+09      0      9      0      0</code></pre>
+<pre class="r"><code>table(analysisDF$crop_damage_factor,analysisDF$crop_damage_scale)</code></pre>
+<pre><code>##        
+##              B      K      M
+##   1000       0 211312      0
+##   1e+06      0      0    501
+##   1e+09      2      0      0</code></pre>
+<pre class="r"><code>#Only diagonals are occupied =&gt; proper mapping
+
+analysisDF&lt;-filter(analysisDF, begin_year&gt;2007) %&gt;% mutate(
+        property_damage_dollars=property_damage*property_damage_factor,
+        crop_damage_dollars=crop_damage*crop_damage_factor,
+        econ_damage_dollars=property_damage_dollars+crop_damage_dollars,
+        casualties=fatalities+injuries
+        
+)
+
+#Check new calcs
+analysisDF[analysisDF$econ_damage_dollars!=(analysisDF$property_damage_dollars+analysisDF$crop_damage_dollars),]</code></pre>
+<pre><code>## # A tibble: 0 x 20
+## # ... with 20 variables: begin_dt &lt;date&gt;, county_fips &lt;chr&gt;, countyname &lt;chr&gt;,
+## #   state &lt;chr&gt;, event_type &lt;chr&gt;, end_date &lt;date&gt;, magnitude &lt;dbl&gt;,
+## #   fatalities &lt;dbl&gt;, injuries &lt;dbl&gt;, property_damage &lt;dbl&gt;,
+## #   property_damage_scale &lt;chr&gt;, crop_damage &lt;dbl&gt;, crop_damage_scale &lt;chr&gt;,
+## #   begin_year &lt;int&gt;, property_damage_factor &lt;dbl&gt;, crop_damage_factor &lt;dbl&gt;,
+## #   property_damage_dollars &lt;dbl&gt;, crop_damage_dollars &lt;dbl&gt;,
+## #   econ_damage_dollars &lt;dbl&gt;, casualties &lt;dbl&gt;</code></pre>
+<pre class="r"><code>analysisDF[analysisDF$casualties!=(analysisDF$fatalities+analysisDF$injuries),]</code></pre>
+<pre><code>## # A tibble: 0 x 20
+## # ... with 20 variables: begin_dt &lt;date&gt;, county_fips &lt;chr&gt;, countyname &lt;chr&gt;,
+## #   state &lt;chr&gt;, event_type &lt;chr&gt;, end_date &lt;date&gt;, magnitude &lt;dbl&gt;,
+## #   fatalities &lt;dbl&gt;, injuries &lt;dbl&gt;, property_damage &lt;dbl&gt;,
+## #   property_damage_scale &lt;chr&gt;, crop_damage &lt;dbl&gt;, crop_damage_scale &lt;chr&gt;,
+## #   begin_year &lt;int&gt;, property_damage_factor &lt;dbl&gt;, crop_damage_factor &lt;dbl&gt;,
+## #   property_damage_dollars &lt;dbl&gt;, crop_damage_dollars &lt;dbl&gt;,
+## #   econ_damage_dollars &lt;dbl&gt;, casualties &lt;dbl&gt;</code></pre>
+<pre class="r"><code>#We see zero rows returned =&gt; proper map</code></pre>
 </div>
 </div>
-<div id="including-plots" class="section level2">
-<h2>Including Plots</h2>
-<p>You can also embed plots, for example:</p>
-<p><img src="data:image/png;base64,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" width="672" /></p>
-<p>Note that the <code>echo = FALSE</code> parameter was added to the code chunk to prevent printing of the R code that generated the plot.</p>
+<div id="results" class="section level2">
+<h2>Results</h2>
+<p><strong>Analysis covers entire U.S. for the four (4) years 2008-2011</strong></p>
+<p>We will aggregate the impacts for human cost and economic cost over the four years. This will allow us to determine a ranking by event type for each cost.</p>
+<pre class="r"><code>annual_event_stats&lt;-analysisDF %&gt;% group_by(event_type, begin_year) %&gt;% 
+        summarize(casualties=sum(casualties), fatalities=sum(fatalities), injuries=sum(injuries), econ_damage_dollars=sum(econ_damage_dollars)) %&gt;%
+        arrange(event_type, begin_year)</code></pre>
+<pre><code>## `summarise()` has grouped output by &#39;event_type&#39;. You can override using the `.groups` argument.</code></pre>
+<pre class="r"><code>total_event_stats&lt;-analysisDF %&gt;% group_by(event_type) %&gt;% 
+        summarize(casualties=sum(casualties), fatalities=sum(fatalities), injuries=sum(injuries), econ_damage_dollars=sum(econ_damage_dollars)) %&gt;%
+        arrange(event_type)
+
+total_econ&lt;-total_event_stats[order(total_event_stats$econ_damage_dollars, decreasing=TRUE),]
+total_pop&lt;-total_event_stats[order(total_event_stats$casualties, decreasing=TRUE),]</code></pre>
+<pre class="r"><code>total_econ_table&lt;-xtable(total_econ[,c(1,5)],caption=&quot;Economic Impact Ranking&quot;)
+names(total_econ_table)&lt;-c(&quot;Event Type&quot;,&quot;Economic Damage Dollars&quot;)
+print(total_econ_table, include.colnames=TRUE, format.args = list(big.mark = &quot;,&quot;, decimal.mark = &quot;.&quot;), type=&quot;html&quot;)</code></pre>
+<!-- html table generated in R 4.0.5 by xtable 1.8-4 package -->
+<!-- Sat Aug 07 22:19:27 2021 -->
+<table border="1">
+<caption align="bottom">
+Economic Impact Ranking
+</caption>
+<tr>
+<th>
+</th>
+<th>
+Event Type
+</th>
+<th>
+Economic Damage Dollars
+</th>
+</tr>
+<tr>
+<td align="right">
+1
+</td>
+<td>
+Flood
+</td>
+<td align="right">
+15,824,587,300.00
+</td>
+</tr>
+<tr>
+<td align="right">
+2
+</td>
+<td>
+Tornado
+</td>
+<td align="right">
+13,324,261,090.00
+</td>
+</tr>
+<tr>
+<td align="right">
+3
+</td>
+<td>
+Hail
+</td>
+<td align="right">
+6,436,795,350.00
+</td>
+</tr>
+<tr>
+<td align="right">
+4
+</td>
+<td>
+Storm Surge/Tide
+</td>
+<td align="right">
+4,637,493,000.00
+</td>
+</tr>
+<tr>
+<td align="right">
+5
+</td>
+<td>
+Flash Flood
+</td>
+<td align="right">
+4,475,061,230.00
+</td>
+</tr>
+<tr>
+<td align="right">
+6
+</td>
+<td>
+Thunderstorm Wind
+</td>
+<td align="right">
+3,365,070,240.00
+</td>
+</tr>
+<tr>
+<td align="right">
+7
+</td>
+<td>
+Hurricane
+</td>
+<td align="right">
+2,610,410,000.00
+</td>
+</tr>
+<tr>
+<td align="right">
+8
+</td>
+<td>
+Wildfire
+</td>
+<td align="right">
+1,200,903,770.00
+</td>
+</tr>
+<tr>
+<td align="right">
+9
+</td>
+<td>
+High Wind
+</td>
+<td align="right">
+1,094,884,540.00
+</td>
+</tr>
+<tr>
+<td align="right">
+10
+</td>
+<td>
+Winter Storm
+</td>
+<td align="right">
+885,255,000.00
+</td>
+</tr>
+<tr>
+<td align="right">
+11
+</td>
+<td>
+Frost/Freeze
+</td>
+<td align="right">
+561,582,000.00
+</td>
+</tr>
+<tr>
+<td align="right">
+12
+</td>
+<td>
+Tropical Storm
+</td>
+<td align="right">
+443,157,350.00
+</td>
+</tr>
+<tr>
+<td align="right">
+13
+</td>
+<td>
+Ice Storm
+</td>
+<td align="right">
+305,878,300.00
+</td>
+</tr>
+<tr>
+<td align="right">
+14
+</td>
+<td>
+Lightning
+</td>
+<td align="right">
+221,536,630.00
+</td>
+</tr>
+<tr>
+<td align="right">
+15
+</td>
+<td>
+Tsunami
+</td>
+<td align="right">
+134,879,000.00
+</td>
+</tr>
+<tr>
+<td align="right">
+16
+</td>
+<td>
+Coastal Flood
+</td>
+<td align="right">
+87,076,500.00
+</td>
+</tr>
+<tr>
+<td align="right">
+17
+</td>
+<td>
+Landslide
+</td>
+<td align="right">
+84,858,000.00
+</td>
+</tr>
+<tr>
+<td align="right">
+18
+</td>
+<td>
+High Surf
+</td>
+<td align="right">
+75,612,500.00
+</td>
+</tr>
+<tr>
+<td align="right">
+19
+</td>
+<td>
+Heavy Snow
+</td>
+<td align="right">
+66,651,100.00
+</td>
+</tr>
+<tr>
+<td align="right">
+20
+</td>
+<td>
+Heavy Rain
+</td>
+<td align="right">
+59,926,000.00
+</td>
+</tr>
+<tr>
+<td align="right">
+21
+</td>
+<td>
+Strong Wind
+</td>
+<td align="right">
+57,830,240.00
+</td>
+</tr>
+<tr>
+<td align="right">
+22
+</td>
+<td>
+Drought
+</td>
+<td align="right">
+51,828,000.00
+</td>
+</tr>
+<tr>
+<td align="right">
+23
+</td>
+<td>
+Winter Weather
+</td>
+<td align="right">
+31,502,500.00
+</td>
+</tr>
+<tr>
+<td align="right">
+24
+</td>
+<td>
+Blizzard
+</td>
+<td align="right">
+28,462,000.00
+</td>
+</tr>
+<tr>
+<td align="right">
+25
+</td>
+<td>
+Lake-Effect Snow
+</td>
+<td align="right">
+11,836,000.00
+</td>
+</tr>
+<tr>
+<td align="right">
+26
+</td>
+<td>
+Lakeshore Flood
+</td>
+<td align="right">
+7,500,000.00
+</td>
+</tr>
+<tr>
+<td align="right">
+27
+</td>
+<td>
+Extreme Cold/Wind Chill
+</td>
+<td align="right">
+7,035,000.00
+</td>
+</tr>
+<tr>
+<td align="right">
+28
+</td>
+<td>
+Waterspout
+</td>
+<td align="right">
+5,131,200.00
+</td>
+</tr>
+<tr>
+<td align="right">
+29
+</td>
+<td>
+Dust Storm
+</td>
+<td align="right">
+2,398,000.00
+</td>
+</tr>
+<tr>
+<td align="right">
+30
+</td>
+<td>
+Avalanche
+</td>
+<td align="right">
+2,383,800.00
+</td>
+</tr>
+<tr>
+<td align="right">
+31
+</td>
+<td>
+Dense Fog
+</td>
+<td align="right">
+2,322,000.00
+</td>
+</tr>
+<tr>
+<td align="right">
+32
+</td>
+<td>
+Freezing Fog
+</td>
+<td align="right">
+2,182,000.00
+</td>
+</tr>
+<tr>
+<td align="right">
+33
+</td>
+<td>
+Cold/Wind Chill
+</td>
+<td align="right">
+1,999,000.00
+</td>
+</tr>
+<tr>
+<td align="right">
+34
+</td>
+<td>
+Heat
+</td>
+<td align="right">
+1,610,000.00
+</td>
+</tr>
+<tr>
+<td align="right">
+35
+</td>
+<td>
+Tropical Depression
+</td>
+<td align="right">
+1,302,000.00
+</td>
+</tr>
+<tr>
+<td align="right">
+36
+</td>
+<td>
+Excessive Heat
+</td>
+<td align="right">
+1,233,200.00
+</td>
+</tr>
+<tr>
+<td align="right">
+37
+</td>
+<td>
+Marine High Wind
+</td>
+<td align="right">
+1,140,010.00
+</td>
+</tr>
+<tr>
+<td align="right">
+38
+</td>
+<td>
+Marine Strong Wind
+</td>
+<td align="right">
+399,330.00
+</td>
+</tr>
+<tr>
+<td align="right">
+39
+</td>
+<td>
+Marine Thunderstorm Wind
+</td>
+<td align="right">
+383,400.00
+</td>
+</tr>
+<tr>
+<td align="right">
+40
+</td>
+<td>
+Dust Devil
+</td>
+<td align="right">
+381,130.00
+</td>
+</tr>
+<tr>
+<td align="right">
+41
+</td>
+<td>
+Astronomical Low Tide
+</td>
+<td align="right">
+200,000.00
+</td>
+</tr>
+<tr>
+<td align="right">
+42
+</td>
+<td>
+Seiche
+</td>
+<td align="right">
+90,000.00
+</td>
+</tr>
+<tr>
+<td align="right">
+43
+</td>
+<td>
+Funnel Cloud
+</td>
+<td align="right">
+65,100.00
+</td>
+</tr>
+<tr>
+<td align="right">
+44
+</td>
+<td>
+Marine Hail
+</td>
+<td align="right">
+4,000.00
+</td>
+</tr>
+<tr>
+<td align="right">
+45
+</td>
+<td>
+Rip Current
+</td>
+<td align="right">
+1,000.00
+</td>
+</tr>
+<tr>
+<td align="right">
+46
+</td>
+<td>
+Dense Smoke
+</td>
+<td align="right">
+0.00
+</td>
+</tr>
+<tr>
+<td align="right">
+47
+</td>
+<td>
+Sleet
+</td>
+<td align="right">
+0.00
+</td>
+</tr>
+<tr>
+<td align="right">
+48
+</td>
+<td>
+Volcanic Ashfall
+</td>
+<td align="right">
+0.00
+</td>
+</tr>
+</table>
+<p>So, we see that for the four years under investigation, Floods and Tornadoes nearly tied as weather events wreaking the greatest economic costs across the U.S. Floods rank first in economic impact over the period, averaging $39.6 MM per year, while tornadoes had the second largest economic impact, averaging $33.3 MM per year over the same period.</p>
+<pre class="r"><code>total_pop_table&lt;-xtable(total_pop[,c(1,2,3,4)],caption=&quot;Human Cost Ranking (Casualty)&quot;,digits=c(0,0,0,0,0))
+names(total_pop_table)&lt;-c(&quot;Event Type&quot;,&quot;Casualties&quot;,&quot;Fatalities&quot;,&quot;Injuries&quot;)
+print(total_pop_table, include.colnames=TRUE, type=&quot;html&quot;, format.args = list(big.mark = &quot;,&quot;))</code></pre>
+<!-- html table generated in R 4.0.5 by xtable 1.8-4 package -->
+<!-- Sat Aug 07 22:19:27 2021 -->
+<table border="1">
+<caption align="bottom">
+Human Cost Ranking (Casualty)
+</caption>
+<tr>
+<th>
+</th>
+<th>
+Event Type
+</th>
+<th>
+Casualties
+</th>
+<th>
+Fatalities
+</th>
+<th>
+Injuries
+</th>
+</tr>
+<tr>
+<td align="right">
+1
+</td>
+<td>
+Tornado
+</td>
+<td align="right">
+9,731
+</td>
+<td align="right">
+782
+</td>
+<td align="right">
+8,949
+</td>
+</tr>
+<tr>
+<td align="right">
+2
+</td>
+<td>
+Thunderstorm Wind
+</td>
+<td align="right">
+1,251
+</td>
+<td align="right">
+114
+</td>
+<td align="right">
+1,137
+</td>
+</tr>
+<tr>
+<td align="right">
+3
+</td>
+<td>
+Lightning
+</td>
+<td align="right">
+898
+</td>
+<td align="right">
+114
+</td>
+<td align="right">
+784
+</td>
+</tr>
+<tr>
+<td align="right">
+4
+</td>
+<td>
+Heat
+</td>
+<td align="right">
+832
+</td>
+<td align="right">
+160
+</td>
+<td align="right">
+672
+</td>
+</tr>
+<tr>
+<td align="right">
+5
+</td>
+<td>
+Flash Flood
+</td>
+<td align="right">
+488
+</td>
+<td align="right">
+223
+</td>
+<td align="right">
+265
+</td>
+</tr>
+<tr>
+<td align="right">
+6
+</td>
+<td>
+Excessive Heat
+</td>
+<td align="right">
+441
+</td>
+<td align="right">
+97
+</td>
+<td align="right">
+344
+</td>
+</tr>
+<tr>
+<td align="right">
+7
+</td>
+<td>
+Flood
+</td>
+<td align="right">
+307
+</td>
+<td align="right">
+144
+</td>
+<td align="right">
+163
+</td>
+</tr>
+<tr>
+<td align="right">
+8
+</td>
+<td>
+Rip Current
+</td>
+<td align="right">
+274
+</td>
+<td align="right">
+161
+</td>
+<td align="right">
+113
+</td>
+</tr>
+<tr>
+<td align="right">
+9
+</td>
+<td>
+Wildfire
+</td>
+<td align="right">
+253
+</td>
+<td align="right">
+13
+</td>
+<td align="right">
+240
+</td>
+</tr>
+<tr>
+<td align="right">
+10
+</td>
+<td>
+Winter Weather
+</td>
+<td align="right">
+194
+</td>
+<td align="right">
+26
+</td>
+<td align="right">
+168
+</td>
+</tr>
+<tr>
+<td align="right">
+11
+</td>
+<td>
+High Surf
+</td>
+<td align="right">
+167
+</td>
+<td align="right">
+49
+</td>
+<td align="right">
+118
+</td>
+</tr>
+<tr>
+<td align="right">
+12
+</td>
+<td>
+Tsunami
+</td>
+<td align="right">
+162
+</td>
+<td align="right">
+33
+</td>
+<td align="right">
+129
+</td>
+</tr>
+<tr>
+<td align="right">
+13
+</td>
+<td>
+Hail
+</td>
+<td align="right">
+157
+</td>
+<td align="right">
+2
+</td>
+<td align="right">
+155
+</td>
+</tr>
+<tr>
+<td align="right">
+14
+</td>
+<td>
+Strong Wind
+</td>
+<td align="right">
+156
+</td>
+<td align="right">
+45
+</td>
+<td align="right">
+111
+</td>
+</tr>
+<tr>
+<td align="right">
+15
+</td>
+<td>
+High Wind
+</td>
+<td align="right">
+132
+</td>
+<td align="right">
+26
+</td>
+<td align="right">
+106
+</td>
+</tr>
+<tr>
+<td align="right">
+16
+</td>
+<td>
+Avalanche
+</td>
+<td align="right">
+108
+</td>
+<td align="right">
+63
+</td>
+<td align="right">
+45
+</td>
+</tr>
+<tr>
+<td align="right">
+17
+</td>
+<td>
+Cold/Wind Chill
+</td>
+<td align="right">
+91
+</td>
+<td align="right">
+89
+</td>
+<td align="right">
+2
+</td>
+</tr>
+<tr>
+<td align="right">
+18
+</td>
+<td>
+Winter Storm
+</td>
+<td align="right">
+50
+</td>
+<td align="right">
+8
+</td>
+<td align="right">
+42
+</td>
+</tr>
+<tr>
+<td align="right">
+19
+</td>
+<td>
+Heavy Snow
+</td>
+<td align="right">
+44
+</td>
+<td align="right">
+8
+</td>
+<td align="right">
+36
+</td>
+</tr>
+<tr>
+<td align="right">
+20
+</td>
+<td>
+Heavy Rain
+</td>
+<td align="right">
+42
+</td>
+<td align="right">
+9
+</td>
+<td align="right">
+33
+</td>
+</tr>
+<tr>
+<td align="right">
+21
+</td>
+<td>
+Marine Thunderstorm Wind
+</td>
+<td align="right">
+31
+</td>
+<td align="right">
+7
+</td>
+<td align="right">
+24
+</td>
+</tr>
+<tr>
+<td align="right">
+22
+</td>
+<td>
+Extreme Cold/Wind Chill
+</td>
+<td align="right">
+29
+</td>
+<td align="right">
+28
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td align="right">
+23
+</td>
+<td>
+Dust Devil
+</td>
+<td align="right">
+26
+</td>
+<td align="right">
+1
+</td>
+<td align="right">
+25
+</td>
+</tr>
+<tr>
+<td align="right">
+24
+</td>
+<td>
+Tropical Storm
+</td>
+<td align="right">
+21
+</td>
+<td align="right">
+7
+</td>
+<td align="right">
+14
+</td>
+</tr>
+<tr>
+<td align="right">
+25
+</td>
+<td>
+Marine Strong Wind
+</td>
+<td align="right">
+16
+</td>
+<td align="right">
+9
+</td>
+<td align="right">
+7
+</td>
+</tr>
+<tr>
+<td align="right">
+26
+</td>
+<td>
+Storm Surge/Tide
+</td>
+<td align="right">
+11
+</td>
+<td align="right">
+11
+</td>
+<td align="right">
+0
+</td>
+</tr>
+<tr>
+<td align="right">
+27
+</td>
+<td>
+Landslide
+</td>
+<td align="right">
+10
+</td>
+<td align="right">
+1
+</td>
+<td align="right">
+9
+</td>
+</tr>
+<tr>
+<td align="right">
+28
+</td>
+<td>
+Blizzard
+</td>
+<td align="right">
+8
+</td>
+<td align="right">
+7
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td align="right">
+29
+</td>
+<td>
+Dust Storm
+</td>
+<td align="right">
+7
+</td>
+<td align="right">
+3
+</td>
+<td align="right">
+4
+</td>
+</tr>
+<tr>
+<td align="right">
+30
+</td>
+<td>
+Ice Storm
+</td>
+<td align="right">
+7
+</td>
+<td align="right">
+3
+</td>
+<td align="right">
+4
+</td>
+</tr>
+<tr>
+<td align="right">
+31
+</td>
+<td>
+Coastal Flood
+</td>
+<td align="right">
+4
+</td>
+<td align="right">
+3
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td align="right">
+32
+</td>
+<td>
+Hurricane
+</td>
+<td align="right">
+2
+</td>
+<td align="right">
+1
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td align="right">
+33
+</td>
+<td>
+Marine High Wind
+</td>
+<td align="right">
+2
+</td>
+<td align="right">
+1
+</td>
+<td align="right">
+1
+</td>
+</tr>
+<tr>
+<td align="right">
+34
+</td>
+<td>
+Astronomical Low Tide
+</td>
+<td align="right">
+0
+</td>
+<td align="right">
+0
+</td>
+<td align="right">
+0
+</td>
+</tr>
+<tr>
+<td align="right">
+35
+</td>
+<td>
+Dense Fog
+</td>
+<td align="right">
+0
+</td>
+<td align="right">
+0
+</td>
+<td align="right">
+0
+</td>
+</tr>
+<tr>
+<td align="right">
+36
+</td>
+<td>
+Dense Smoke
+</td>
+<td align="right">
+0
+</td>
+<td align="right">
+0
+</td>
+<td align="right">
+0
+</td>
+</tr>
+<tr>
+<td align="right">
+37
+</td>
+<td>
+Drought
+</td>
+<td align="right">
+0
+</td>
+<td align="right">
+0
+</td>
+<td align="right">
+0
+</td>
+</tr>
+<tr>
+<td align="right">
+38
+</td>
+<td>
+Freezing Fog
+</td>
+<td align="right">
+0
+</td>
+<td align="right">
+0
+</td>
+<td align="right">
+0
+</td>
+</tr>
+<tr>
+<td align="right">
+39
+</td>
+<td>
+Frost/Freeze
+</td>
+<td align="right">
+0
+</td>
+<td align="right">
+0
+</td>
+<td align="right">
+0
+</td>
+</tr>
+<tr>
+<td align="right">
+40
+</td>
+<td>
+Funnel Cloud
+</td>
+<td align="right">
+0
+</td>
+<td align="right">
+0
+</td>
+<td align="right">
+0
+</td>
+</tr>
+<tr>
+<td align="right">
+41
+</td>
+<td>
+Lake-Effect Snow
+</td>
+<td align="right">
+0
+</td>
+<td align="right">
+0
+</td>
+<td align="right">
+0
+</td>
+</tr>
+<tr>
+<td align="right">
+42
+</td>
+<td>
+Lakeshore Flood
+</td>
+<td align="right">
+0
+</td>
+<td align="right">
+0
+</td>
+<td align="right">
+0
+</td>
+</tr>
+<tr>
+<td align="right">
+43
+</td>
+<td>
+Marine Hail
+</td>
+<td align="right">
+0
+</td>
+<td align="right">
+0
+</td>
+<td align="right">
+0
+</td>
+</tr>
+<tr>
+<td align="right">
+44
+</td>
+<td>
+Seiche
+</td>
+<td align="right">
+0
+</td>
+<td align="right">
+0
+</td>
+<td align="right">
+0
+</td>
+</tr>
+<tr>
+<td align="right">
+45
+</td>
+<td>
+Sleet
+</td>
+<td align="right">
+0
+</td>
+<td align="right">
+0
+</td>
+<td align="right">
+0
+</td>
+</tr>
+<tr>
+<td align="right">
+46
+</td>
+<td>
+Tropical Depression
+</td>
+<td align="right">
+0
+</td>
+<td align="right">
+0
+</td>
+<td align="right">
+0
+</td>
+</tr>
+<tr>
+<td align="right">
+47
+</td>
+<td>
+Volcanic Ashfall
+</td>
+<td align="right">
+0
+</td>
+<td align="right">
+0
+</td>
+<td align="right">
+0
+</td>
+</tr>
+<tr>
+<td align="right">
+48
+</td>
+<td>
+Waterspout
+</td>
+<td align="right">
+0
+</td>
+<td align="right">
+0
+</td>
+<td align="right">
+0
+</td>
+</tr>
+</table>
+<p>Here, we see that for the four years under investigation, tornadoes, by far, had the greatest human cost. Tornadoes far outnumbered any other weather event in the number of casualties produced; broken down by fatalities and injuries, tornadoes still ranked the highest for human impact among all other weather events.</p>
+<p>Thunderstorm winds caused the next highest number of casualties over the period, across the U.S., due primarily to the number of injuries they induced. In fact, flash flooding events caused more deaths over the period than any other weather event, other than tornadoes.</p>
+<p>We supply scatterplot graphs for added visualization of the dual impacts of these 48 weather events. We use logarithm transformations along both axes, in order to allow for better visual separation in the plots (logarithms being monotonic increasing functions, they maintain the natural, numeric ordering of the measurements along each axis in each of the plots).</p>
+<pre class="r"><code>par(mfrow=c(1,3), oma=c(0,0,2,0))
+
+with(total_event_stats, {
+        plot(log(casualties), log(econ_damage_dollars), pch=1, col=rgb(0,0,1), 
+             ylab=&quot;Log of Economic Damages ($)&quot;, xlab=&quot;Log of Casualties&quot;, main=(&quot;Casualties and Economic Impact $&quot;))
+        text(log(casualties)+0.0, log(econ_damage_dollars)+0.35, labels=event_type, col=rgb(0,0,1,0.35))
+        plot(log(fatalities), log(econ_damage_dollars), pch=1, col=rgb(0,0,0), 
+             ylab=&quot;Log of Economic Damages ($)&quot;, xlab=&quot;Log of Deaths&quot;, main=(&quot;Deaths and Economic Impact $&quot;))
+        text(log(fatalities)+0.0, log(econ_damage_dollars)+0.35, labels=event_type, col=rgb(0,0,0,0.35))
+        plot(log(injuries), log(econ_damage_dollars), pch=1, col=rgb(1,0,0), 
+             ylab=&quot;Log of Economic Damages ($)&quot;, xlab=&quot;Log of Injuries&quot;, main=(&quot;Injuries and Economic Impact $&quot;))
+        text(log(injuries)+0.0, log(econ_damage_dollars)+0.35, labels=event_type, col=rgb(1,0,0,0.45))
+        mtext(&quot;Weather Events: Types of Health Impacts and Combined Economic Costs&quot;, outer=TRUE)
+        })</code></pre>
+<p><img src="data:image/png;base64,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" /><!-- --></p>
+<pre class="r"><code>par(mfrow=c(1,1), oma=c(0,0,0,0))</code></pre>
+<p>In the plots above, we can see clearly that tornadoes. as a weather event, rank highest in economic damage impact and floods rank very close (both occupy the highest regions of each of the graphs). We also see in the middle plot, that after tornadoes, it is flash flooding that causes the highest number of deaths; yet, by the far right plot, we see that it is thunderstorm wind causing the greatest number of injuries after tornadoes. One last feature that jumps out immediately for the reader is that rip currents, as a weather event, cause the least economic damage, standing out significantly at the bottom of each of the three plots; yet, in the middle plot, it is clearly seen that rip currents cause more deaths than a large portion of the other 48 weather events tracked.</p>
 <hr />
 <p><strong>Footnotes</strong></p>
 <ol style="list-style-type: decimal">
-<li>The version of the database used in this analysis is from <strong>2007</strong>.<br />
-</li>
+<li>The version of the database used in this analysis is from early 2012. The NCDC receives data from NWS between 60 and 90 days after the end of the data month. This version has last reporting event date of 11/30/2011.</li>
 <li>The Storm Database’ Storm Data Preparation document, which contains not only a glossary of terms and database values, but also reports on outstanding storms of the month (OSM) and tornado and severe thunderstorm confirmation reports.</li>
 </ol>
 </div>

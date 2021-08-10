@@ -1,0 +1,198 @@
+---
+title: 'U.S. Storm Events: Health and Economic Impact Analysis'
+author: "Mark Nemeth"
+date: "8/6/2021"
+output: 
+  html_document:
+    keep_md:  true
+---
+
+## Synopsis
+
+Storms and other severe weather events can cause both public health and economic problems for communities and municipalities. Many severe events can result in fatalities, injuries, and property damage, and preventing such outcomes to the extent possible is a key concern.
+
+This analysis will address that concern by identifying which types of storm events    
+
+* are most harmful with respect to population health, and  
+* have the greatest economic consequences.  
+
+The data supporting this effort is drawn from the U.S. National Oceanic and Atmospheric Administration's (NOAA) [Storm Database][1]<sup>1</sup>, a repository that tracks the characteristics of major storms and weather events in the United States, such as when and where they occur, and estimates of any fatalities, injuries, and property damage.
+
+<h5 style="background-color:rgb(255, 99, 71);">TODO: Add in some overview of the findings below....</h5>  
+
+## Data Processing
+
+From the 2012 version of the [Storm Database][1] (last reporting month being November 2011), we were able to obtain the needed information, such as the storm [event types][2]<sup>2</sup> and event dates, casualty counts (fatalities and injuries), estimates for property damage and crop damage, and the locations of these events with geographic specificity at the county-level (although, the analysis here will focus merely at the national level).  
+
+### Reading in the Storm Database file for initial checking  
+
+```{r library_calls}
+library(readr)
+library(ggplot2)
+library(stringr)
+library(xtable)
+library(dplyr)
+```
+```{r reading_in_storm_file}
+
+#Class version = 2012 version of database (NCDC receives data from NWS between 60 and 90 days after the end of the data month.)
+fileUrl<-"https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2"
+download.file(fileUrl,destfile="./data/repdata_stormdata.csv.bz2",method="curl")
+
+
+#initial inspection of file
+chkFile<-read_csv("./data/repdata_stormdata.csv.bz2", n_max=1000)
+str(chkFile)
+
+```
+
+Here we see that a number of the columns will not be needed.  We will pull in only the needed columns.  
+  
+**Columns of Interest**  
+  
+* BGN_DATE                = Begin date is datetime character format and will need to be transformed to date mm/dd/yyyy.  Event start date.  
+* TIME_ZONE               = Could be helpful if times or days are part of analysis, but we will not be working so granularly. (actually omitted in analysis)   
+* COUNTY                  = This is the standard FIPS CODE, which is a character 4-digit code.  We transform this as such.  
+* COUNTYNAME              = The full name of the county.  
+* STATE                   = 2-letter state abbreviation.  
+* EVTYPE                  = Values are Hail, Thunderstorm, etc. - spelled out; Standardized in August 2007.  We note "?" is in the field to be corrected later.  
+* END_DATE                = End date is datetime character format and will need to be transformed to date mm/dd/yyyy. Event end date; not crucial to this study.   
+* MAG                     = Wind speed (knots) or hail size in inches (to hundredths), depending on event.  
+* FATALITIES              = Count of fatalities directly ascribed to the event.   
+* INJURIES                = Count of injuries directly ascribed to the event.    
+* PROPDMG                 = Numeric value (dd.dd) which represents the thousands, millions, etc. in property damage amounts. Used in conjunction with the PROPDMGEXP value.    
+  
+* PROPDMGEXP              = Indicates if PROPDMG is K(1000's), M(1,000,000s), or B (Billions). Standardized along with event types in August 2007.   
+* CROPDMG                 = Numeric value (dd.dd) which represents the thousands, millions, etc. in crop damage  amounts. Used in conjunction with the CROPDMGEXP value.  
+  
+* CROPDMGEXP              =  Indicates if CROPDMG is K(1000's), M(1,000,000s), or B (Billions).  Standardized along with event types in August 2007.  
+
+  
+### Reading in the Storm Database file  
+* Reading in  
+* Filtering on columns of interest  
+* Performing noted transformations  
+* Adding aggregation variable begin_year for annualized views of results 
+  
+  
+    
+```{r reading_in_analysis_form_of_db, cache=TRUE}
+
+analysisDF<-read_csv("./data/repdata_stormdata.csv.bz2", col_types="ncccncccnccccncnccnnnnnnncnccccnnnncn")
+analysisDF<-analysisDF %>% 
+        
+        select(
+                BGN_DATE,
+                COUNTY,          #FIPS CODE
+                COUNTYNAME,
+                STATE,           #2-letter abbrev.
+                EVTYPE,          #Hail, Thunderstorm, etc. - spelled out
+                END_DATE,
+                MAG,             #Wind speed (knots) or hail size in inches (to hundredths), depending on event
+                FATALITIES,      #Count
+                INJURIES,        #Count
+                PROPDMG,         #Numeric value
+                PROPDMGEXP,      #Indicates if numeric is K(1000's), M(1,000,000s), B
+                CROPDMG,         #Numeric and *EXP same use as for PROPDMG
+                CROPDMGEXP) %>% 
+        
+        mutate(
+                begin_dt=as.Date(BGN_DATE, format =  "%m/%d/%Y %H:%M:%S"),
+                county_fips=as.character(str_pad(COUNTY, width=4, side="left", pad="0")), #FIPS are 4 character numeric codes
+                countyname=COUNTYNAME,
+                state=STATE,
+                event_type=str_to_title(EVTYPE),   #Many different cases used for same event type - so, make uniform
+                end_date=as.Date(END_DATE, format =  "%m/%d/%Y %H:%M:%S"),
+                magnitude=MAG,
+                fatalities=FATALITIES,
+                injuries=INJURIES,
+                property_damage=PROPDMG,
+                property_damage_scale=PROPDMGEXP,
+                crop_damage=CROPDMG,
+                crop_damage_scale=CROPDMGEXP) %>%
+        
+        select(
+                begin_dt,
+                county_fips,
+                countyname,
+                state,
+                event_type,
+                end_date,
+                magnitude,
+                fatalities,
+                injuries,
+                property_damage,
+                property_damage_scale,
+                crop_damage,
+                crop_damage_scale)
+               
+analysisDF$begin_year<-as.integer(format(analysisDF$begin_dt, format="%Y"))
+
+#analysisDF$event_type[analysisDF$event_type=="?"] <- "Unidentifed Type"   #To eliminate the single "?" entry
+
+```
+
+Now, we recognize from the *NWS Instruction 10-1605* (linked above), that standardization of event type names was instituted in August of 2007.  Also, this is when the monetary estimate tables were formalized, as shown in this Storm Data Preparation instruction.  So, we will investigate the entries for these fields ahead of any analysis.
+
+
+```{r analysis_checking_tables_events, results='asis'}
+
+evt_table_ante<-xtable(table(sort(analysisDF$event_type[analysisDF$begin_year<2007])),caption="Before August 2007 Instruction", align="lr") #working on annual est.s later
+names(evt_table_ante)<-c("Event Count")
+evt_table_post<-xtable(table(sort(analysisDF$event_type[analysisDF$begin_year>2007])), caption="After August 2007 Instruction", align="lr") #working on annual est.s later
+names(evt_table_post)<-c("Event Count")
+
+#dmg_table<-xtable(table(analysisDF$property_damage_scale[analysisDF$begin_year>2007]))
+
+print(evt_table_ante, include.colnames=TRUE, type="html")
+print(evt_table_post, include.colnames=TRUE, type="html")
+
+```
+  
+Here we see that the Event Type names distribution prior to August 2007 lacks any regularity, and it would require much effort to standardize these values.  There are items like "Dry" and "Dry Conditions" that would need to be collapsed properly, as well as items like "Blizzard" and "Blizzard Weather"; also, it would be unclear how to collapse "Blizzard Summary" with all the other "Blizzard..." entries, or "Excessive" with all of the other "Excessive..." entries.  There are numerous other such difficulties with the pre-2007 data.  
+
+On the other hand, we can see that the Event Type names fit the regularity demanded by NWS Instruction 10-1605.  
+
+We are looking to understand how weather events impact people physically and economically.  Recent annual data covering the years 2008, 2009, 2010, and 2011, should suffice to deliver the desired indications.  
+
+It is merely left to ensure the coding for the damage scaling fields meet the same regularity as seen for Event Type post-2007.  
+  
+  
+```{r analysis_checking_tables_scalings, results='asis'}
+
+prop_scale_table<-xtable(table(sort(analysisDF$property_damage_scale[analysisDF$begin_year>2007])),caption="Property Damage Scalings", align="lr") #working on annual est.s later
+names(prop_scale_table)<-c("Scalings Count")
+crop_scale_table<-xtable(table(sort(analysisDF$crop_damage_scale[analysisDF$begin_year>2007])), caption="Crop Damage Scalings", align="lr") #working on annual est.s later
+names(crop_scale_table)<-c("Scalings Count")
+
+#dmg_table<-xtable(table(analysisDF$property_damage_scale[analysisDF$begin_year>2007]))
+
+print(prop_scale_table, include.colnames=TRUE, type="html")
+print(crop_scale_table, include.colnames=TRUE, type="html")
+
+```
+  
+    
+So, we see that the scalings have the regularity sought.  For property damage, we need only multiply the property damage value in property_damage by appropriate scaling, as indicated in the property_damage_scale field.  For example, if the scale is "K", we will multiply property_damage by 1,000, and if the scale is "B", we will multiply property_damage by 10<sup>9.  This same operation wil be performed for the crop_damage estimates, using the crop_damage_scale values.  Total economic impact will be the sum of these two estimates.
+
+```{r economic_impact_calcs}
+
+
+
+```
+  
+  
+  
+## Results
+
+Tables and plots will go here.
+
+---  
+**Footnotes**  
+  
+1. The version of the database used in this analysis is from early 2012. The NCDC receives data from NWS between 60 and 90 days after the end of the data month.  This version has last reporting event date of 11/30/2011. 
+2. The Storm Database' Storm Data Preparation document, which contains not only a glossary of terms and database values, but also reports on outstanding storms of the month (OSM) and tornado and severe thunderstorm confirmation reports.
+
+
+[1]: https://www.ncdc.noaa.gov/stormevents/ftp.jsp "Storm Database"
+[2]: https://www.nws.noaa.gov/directives/sym/pd01016005curr.pdf "event types"
